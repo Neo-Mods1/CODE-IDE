@@ -14,8 +14,6 @@
 .cxx
 local.properties
 /app/release/
-/app/release-key.jks
-/app/release-key.properties
 *.apk
 *.ap_
 *.aab

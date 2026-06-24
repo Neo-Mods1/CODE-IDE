@@ -87,7 +87,7 @@ class MainActivity : AppCompatActivity() {
         bottomPanelTabs = findViewById(R.id.bottom_panel_tabs)
         bottomPanelViewpager = findViewById(R.id.bottom_panel_viewpager)
         fileTreeRecycler = findViewById(R.id.file_tree_recycler)
-        projectNameText = findViewById(R.id.drawer_project_name)
+        projectNameText = navigationView.findViewById(R.id.drawer_project_name)
     }
 
     private fun setupToolbar() {

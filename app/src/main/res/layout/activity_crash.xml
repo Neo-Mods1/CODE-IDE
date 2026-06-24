@@ -27,7 +27,7 @@
         android:textAppearance="?attr/textAppearanceBodyMedium"
         android:textColor="?attr/colorOnSurfaceVariant"
         android:layout_marginBottom="16dp"
-        android:lineSpacingMultiplier="1.2f" />
+        android:lineSpacingMultiplier="1.2" />
 
     <!-- Loading -->
     <TextView
@@ -57,7 +57,7 @@
             android:textAppearance="?attr/textAppearanceBodySmall"
             android:textColor="?attr/colorOnSurface"
             android:typeface="monospace"
-            android:lineSpacingMultiplier="1.3f"
+            android:lineSpacingMultiplier="1.3"
             android:textIsSelectable="true"
             android:padding="8dp" />
 

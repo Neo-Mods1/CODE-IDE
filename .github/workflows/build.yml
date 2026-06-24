@@ -55,7 +55,7 @@ jobs:
         path: app/build/outputs/apk/debug/*.apk
         retention-days: 7
 
-    - name: Send success notification to Telegram
+    - name: Send success with APK to Telegram
       if: steps.check.outputs.success == 'true'
       env:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -65,11 +65,15 @@ jobs:
         APK_SIZE=$(du -h "$APK_FILE" | cut -f1)
         BUILD_TIME=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
         COMMIT_MSG=$(echo "${{ github.event.head_commit.message || github.event.pull_request.title || 'N/A' }}" | head -1)
-        TEXT="✅ BUILD SUCCESSFUL%0A%0APackage: CODE-IDE%0ASize: ${APK_SIZE}%0ATime: ${BUILD_TIME}%0ABranch: ${{ github.ref_name }}%0ACommit: ${COMMIT_MSG}%0A%0ADownload: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
         curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
           -d chat_id="${TELEGRAM_CHAT_ID}" \
-          -d parse_mode="Markdown" \
-          -d text="${TEXT}"
+          -d text="✅ BUILD SUCCESSFUL%0APackage: CODE-IDE%0ASize: ${APK_SIZE}%0ATime: ${BUILD_TIME}%0ABranch: ${{ github.ref_name }}%0ACommit: ${COMMIT_MSG}%0A%0ASending APK..."
+
+        curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
+          -F chat_id="${TELEGRAM_CHAT_ID}" \
+          -F document=@"${APK_FILE}" \
+          -F caption="CODE-IDE v${{ github.run_number }} - Debug APK"
 
     - name: Send failure notification to Telegram
       if: steps.check.outputs.success == 'false'
@@ -77,12 +81,12 @@ jobs:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       run: |
-        ERROR_LOG=$(tail -50 build_output.log 2>/dev/null | head -c 2000)
         COMMIT_MSG=$(echo "${{ github.event.head_commit.message || github.event.pull_request.title || 'N/A' }}" | head -1)
-        TEXT="❌ BUILD FAILED%0A%APackage: CODE-IDE%0ABranch: ${{ github.ref_name }}%0ACommit: ${COMMIT_MSG}%0A%0ALogs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
         curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
           -d chat_id="${TELEGRAM_CHAT_ID}" \
-          -d text="${TEXT}"
+          -d text="❌ BUILD FAILED%0APackage: CODE-IDE%0ABranch: ${{ github.ref_name }}%0ACommit: ${COMMIT_MSG}%0A%0ALogs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
         curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
           -F chat_id="${TELEGRAM_CHAT_ID}" \
           -F document=@build_output.log \

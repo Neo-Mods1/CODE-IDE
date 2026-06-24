@@ -4,6 +4,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
 }
+
 val keystorePropertiesFile = rootProject.file("app/release-key.properties")
 val keystoreProperties = Properties()
 if (keystorePropertiesFile.exists()) {
@@ -12,12 +13,12 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.neo.ide"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.neo.ide"
-        minSdk = 24
-        targetSdk = 34
+        minSdk = 30
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
 
@@ -45,7 +46,8 @@ android {
             signingConfig = signingConfigs.findByName("release")
         }
         debug {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
             signingConfig = signingConfigs.findByName("release")
@@ -63,6 +65,7 @@ android {
 
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 
     packaging {

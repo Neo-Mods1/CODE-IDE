@@ -107,4 +107,12 @@
         <item name="cardElevation">0dp</item>
     </style>
 
+    <!-- Splash Theme -->
+    <style name="Theme.CodeIDE.Splash" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:windowBackground">#FF111411</item>
+        <item name="android:statusBarColor">#FF111411</item>
+        <item name="android:navigationBarColor">#FF111411</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+    </style>
+
 </resources>

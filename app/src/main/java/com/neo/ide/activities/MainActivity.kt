@@ -11,6 +11,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.animation.DecelerateInterpolator
+import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -45,7 +46,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var editorTabs: TabLayout
     private lateinit var editorContainer: View
     private lateinit var editorPlaceholder: View
-    private lateinit var codeEditorArea: View
+    private lateinit var codeEditorArea: FrameLayout
     private lateinit var bottomPanel: LinearLayout
     private lateinit var bottomPanelTabs: TabLayout
     private lateinit var bottomPanelViewpager: ViewPager2

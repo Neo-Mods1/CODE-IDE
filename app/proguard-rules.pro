@@ -1,5 +1,4 @@
-# Keep javax.annotation.Nullable (referenced by okio)
--dontwarn javax.annotation.**
+# JSR305
 -keep class javax.annotation.** { *; }
 
 # OkHttp / Okio

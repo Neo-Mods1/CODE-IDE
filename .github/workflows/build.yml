@@ -65,19 +65,7 @@ jobs:
         APK_SIZE=$(du -h "$APK_FILE" | cut -f1)
         BUILD_TIME=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
         COMMIT_MSG=$(echo "${{ github.event.head_commit.message || github.event.pull_request.title || 'N/A' }}" | head -1)
-        
-        TEXT="✅ *BUILD SUCCESSFUL*
-
-📦 *CODE-IDE* build completed!
-
-📥 Download APK:
-🔗 https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
-📏 APK Size: ${APK_SIZE}
-🕐 Built: ${BUILD_TIME}
-🔀 Branch: ${{ github.ref_name }}
-📝 Commit: ${COMMIT_MSG}"
-
+        TEXT="✅ BUILD SUCCESSFUL%0A%0APackage: CODE-IDE%0ASize: ${APK_SIZE}%0ATime: ${BUILD_TIME}%0ABranch: ${{ github.ref_name }}%0ACommit: ${COMMIT_MSG}%0A%0ADownload: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
           -d chat_id="${TELEGRAM_CHAT_ID}" \
           -d parse_mode="Markdown" \
@@ -89,28 +77,16 @@ jobs:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       run: |
-        ERROR_LOG=$(tail -50 build_output.log 2>/dev/null | sed 's/[`]/\x60/g' | head -c 3000)
+        ERROR_LOG=$(tail -50 build_output.log 2>/dev/null | head -c 2000)
         COMMIT_MSG=$(echo "${{ github.event.head_commit.message || github.event.pull_request.title || 'N/A' }}" | head -1)
-        
-        TEXT="❌ *BUILD FAILED*
-
-🔴 *CODE-IDE* build failed!
-
-📋 *Error Log:*
-\`\`\`
-${ERROR_LOG}
-\`\`\`
-
-🔗 Full logs:
-https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
-🔀 Branch: ${{ github.ref_name }}
-📝 Commit: ${COMMIT_MSG}"
-
+        TEXT="❌ BUILD FAILED%0A%APackage: CODE-IDE%0ABranch: ${{ github.ref_name }}%0ACommit: ${COMMIT_MSG}%0A%0ALogs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
           -d chat_id="${TELEGRAM_CHAT_ID}" \
-          -d parse_mode="Markdown" \
           -d text="${TEXT}"
+        curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
+          -F chat_id="${TELEGRAM_CHAT_ID}" \
+          -F document=@build_output.log \
+          -F caption="Build log for run ${{ github.run_id }}"
 
     - name: Upload build log on failure
       if: steps.check.outputs.success == 'false'

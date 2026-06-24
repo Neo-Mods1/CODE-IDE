@@ -1,0 +1,191 @@
+package com.neo.ide.download
+
+import android.content.Context
+import android.util.Log
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.io.File
+import java.io.IOException
+import java.io.RandomAccessFile
+import java.security.MessageDigest
+import java.util.concurrent.TimeUnit
+import kotlin.coroutines.coroutineContext
+
+class ResumableDownloader(private val context: Context) {
+
+    companion object {
+        private const val TAG = "ResumableDownloader"
+        private const val MAX_RETRIES = 3
+        private const val CONNECT_TIMEOUT = 30L
+        private const val READ_TIMEOUT = 60L
+        private const val CHUNK_SIZE = 8192
+    }
+
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+        .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
+        .followRedirects(true)
+        .followSslRedirects(true)
+        .build()
+
+    data class DownloadState(
+        val url: String,
+        val destination: String,
+        val bytesDownloaded: Long = 0,
+        val totalBytes: Long = 0,
+        val isComplete: Boolean = false,
+        val error: String? = null
+    ) {
+        val progress: Float
+            get() = if (totalBytes > 0) bytesDownloaded.toFloat() / totalBytes else 0f
+    }
+
+    interface DownloadListener {
+        fun onProgress(state: DownloadState)
+        fun onComplete(file: File)
+        fun onError(error: String)
+    }
+
+    private fun getStateFile(destination: String): File {
+        return File("$destination.state")
+    }
+
+    private fun saveState(state: DownloadState) {
+        val stateFile = getStateFile(state.destination)
+        stateFile.writeText("${state.url}\n${state.bytesDownloaded}\n${state.totalBytes}")
+    }
+
+    private fun loadState(destination: String): DownloadState? {
+        val stateFile = getStateFile(destination)
+        if (!stateFile.exists()) return null
+        return try {
+            val lines = stateFile.readLines()
+            DownloadState(
+                url = lines[0],
+                destination = destination,
+                bytesDownloaded = lines[1].toLong(),
+                totalBytes = lines[2].toLong()
+            )
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun clearState(destination: String) {
+        getStateFile(destination).delete()
+    }
+
+    suspend fun download(
+        url: String,
+        destination: String,
+        expectedSha256: String? = null,
+        listener: DownloadListener? = null
+    ): Result<File> = withContext(Dispatchers.IO) {
+        val destFile = File(destination)
+        destFile.parentFile?.mkdirs()
+
+        var retries = 0
+        while (retries < MAX_RETRIES) {
+            try {
+                return@withContext Result.success(doDownload(url, destFile, expectedSha256, listener))
+            } catch (e: Exception) {
+                retries++
+                Log.w(TAG, "Download failed (attempt $retries/$MAX_RETRIES): ${e.message}")
+                if (retries >= MAX_RETRIES) {
+                    listener?.onError(e.message ?: "Download failed")
+                    return@withContext Result.failure(e)
+                }
+                kotlinx.coroutines.delay(1000L * retries)
+            }
+        }
+        return@withContext Result.failure(IOException("Max retries exceeded"))
+    }
+
+    private fun doDownload(
+        url: String,
+        destFile: File,
+        expectedSha256: String?,
+        listener: DownloadListener?
+    ): File {
+        val existingState = loadState(destFile.absolutePath)
+        var bytesDownloaded = existingState?.bytesDownloaded ?: 0L
+        var totalBytes = existingState?.totalBytes ?: 0L
+
+        val requestBuilder = Request.Builder().url(url)
+        if (bytesDownloaded > 0) {
+            requestBuilder.addHeader("Range", "bytes=$bytesDownloaded-")
+            Log.d(TAG, "Resuming download from byte $bytesDownloaded")
+        }
+
+        val response = client.newCall(requestBuilder.build()).execute()
+        if (!response.isSuccessful && response.code != 206) {
+            throw IOException("HTTP ${response.code}: ${response.message}")
+        }
+
+        val body = response.body ?: throw IOException("Empty response body")
+        val contentLength = body.contentLength()
+        if (totalBytes == 0L) {
+            totalBytes = if (response.code == 206) {
+                bytesDownloaded + contentLength
+            } else {
+                contentLength.toLong()
+            }
+        }
+
+        if (response.code == 200) {
+            bytesDownloaded = 0L
+        }
+
+        val raf = RandomAccessFile(destFile, "rw")
+        raf.seek(bytesDownloaded)
+
+        body.byteStream().use { input ->
+            val buffer = ByteArray(CHUNK_SIZE)
+            var bytesRead: Int
+            while (input.read(buffer).also { bytesRead = it } != -1) {
+                coroutineContext.ensureActive()
+                raf.write(buffer, 0, bytesRead)
+                bytesDownloaded += bytesRead
+
+                listener?.onProgress(
+                    DownloadState(url, destFile.absolutePath, bytesDownloaded, totalBytes)
+                )
+
+                if (bytesDownloaded % (CHUNK_SIZE * 50) == 0L) {
+                    saveState(DownloadState(url, destFile.absolutePath, bytesDownloaded, totalBytes))
+                }
+            }
+        }
+        raf.close()
+
+        saveState(DownloadState(url, destFile.absolutePath, bytesDownloaded, totalBytes, isComplete = true))
+
+        if (expectedSha256 != null) {
+            val actualSha256 = computeSha256(destFile)
+            if (!actualSha256.equals(expectedSha256, ignoreCase = true)) {
+                destFile.delete()
+                clearState(destFile.absolutePath)
+                throw IOException("SHA-256 mismatch: expected=$expectedSha256 actual=$actualSha256")
+            }
+        }
+
+        clearState(destFile.absolutePath)
+        listener?.onComplete(destFile)
+        return destFile
+    }
+
+    fun computeSha256(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { input ->
+            val buffer = ByteArray(8192)
+            var bytesRead: Int
+            while (input.read(buffer).also { bytesRead = it } != -1) {
+                digest.update(buffer, 0, bytesRead)
+            }
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
+    }
+}

@@ -58,8 +58,24 @@
     <string name="msg_grant_permissions">Please grant the permissions to continue.</string>
 
     <!-- Greeting -->
-    <string name="greeting_title">Welcome</string>
+    <string name="greeting_title">Welcome to CODE-IDE</string>
     <string name="greeting_subtitle">Learn, build, launch. All on your Android.</string>
+
+    <!-- Setup -->
+    <string name="setup_title">Setup</string>
+    <string name="setup_config_title">Setup Configuration</string>
+    <string name="setup_config_subtitle">Choose which components to install</string>
+    <string name="setup_auto_install">Auto-install resources</string>
+    <string name="setup_sdk_version">SDK Version</string>
+    <string name="setup_jdk_version">JDK Version</string>
+    <string name="setup_install_git">Install Git</string>
+    <string name="setup_install_openssh">Install OpenSSH</string>
+    <string name="setup_status_setup">Setting up…</string>
+    <string name="setup_status_complete">Setup complete</string>
+    <string name="setup_status_failed">Setup failed</string>
+    <string name="setup_next">Next</string>
+    <string name="setup_start">Start Setup</string>
+    <string name="setup_skip">Skip</string>
 
     <!-- Common -->
     <string name="ok">OK</string>

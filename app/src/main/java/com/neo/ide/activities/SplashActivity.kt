@@ -9,6 +9,8 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.airbnb.lottie.LottieAnimationView
 import com.neo.ide.R
+import com.neo.ide.download.SetupState
+import com.neo.ide.onboarding.OnboardingActivity
 
 @SuppressLint("CustomSplashScreen")
 class SplashActivity : AppCompatActivity() {
@@ -41,11 +43,21 @@ class SplashActivity : AppCompatActivity() {
             .start()
 
         Handler(Looper.getMainLooper()).postDelayed({
-            val intent = Intent(this, PermissionsActivity::class.java)
-            startActivity(intent)
-            finish()
-            @Suppress("DEPRECATION")
-            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+            navigateToNext()
         }, SPLASH_DURATION)
+    }
+
+    private fun navigateToNext() {
+        val destination = when {
+            !SetupState.isOnboardingComplete(this) -> OnboardingActivity::class.java
+            !SetupState.arePermissionsGranted(this) -> OnboardingActivity::class.java
+            !SetupState.isSetupComplete(this) -> OnboardingActivity::class.java
+            else -> MainActivity::class.java
+        }
+
+        startActivity(Intent(this, destination))
+        finish()
+        @Suppress("DEPRECATION")
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
     }
 }

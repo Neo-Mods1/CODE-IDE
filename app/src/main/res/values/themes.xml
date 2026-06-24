@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.CodeIDE" parent="Theme.Material3.Dark.NoActionBar">
+    <style name="Theme.CodeIDE" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/md_theme_primary</item>
         <item name="colorOnPrimary">@color/md_theme_onPrimary</item>
         <item name="colorPrimaryContainer">@color/md_theme_primaryContainer</item>
@@ -59,14 +59,14 @@
 
     <!-- Toolbar -->
     <style name="CodeIDE.Toolbar" parent="Widget.Material3.Toolbar">
-        <item name="android:background">@color/md_theme_surface</item>
+        <item name="android:background">?attr/colorSurface</item>
         <item name="elevation">0dp</item>
-        <item name="titleTextColor">@color/md_theme_onSurface</item>
+        <item name="titleTextColor">?attr/colorOnSurface</item>
     </style>
 
     <!-- Tab Layout -->
     <style name="CodeIDE.TabLayout" parent="Widget.Material3.TabLayout">
-        <item name="tabBackground">@color/tab_inactive</item>
+        <item name="tabBackground">?attr/colorSurfaceContainer</item>
         <item name="tabSelectedTextColor">@color/tab_text_active</item>
         <item name="tabTextColor">@color/tab_text_inactive</item>
         <item name="tabIndicatorColor">@color/tab_active</item>
@@ -94,24 +94,32 @@
 
     <!-- Drawer Navigation -->
     <style name="CodeIDE.Drawer" parent="Widget.Material3.NavigationView">
-        <item name="android:background">@color/drawer_background</item>
-        <item name="itemIconTint">@color/drawer_item_icon</item>
-        <item name="itemTextColor">@color/drawer_item_text</item>
-        <item name="itemRippleColor">@color/drawer_item_selected</item>
+        <item name="android:background">?attr/colorSurface</item>
+        <item name="itemIconTint">?attr/colorOnSurfaceVariant</item>
+        <item name="itemTextColor">?attr/colorOnSurface</item>
+        <item name="itemRippleColor">?attr/colorPrimaryContainer</item>
     </style>
 
     <!-- Card -->
     <style name="CodeIDE.Card" parent="Widget.Material3.CardView.Filled">
-        <item name="cardBackgroundColor">@color/md_theme_surfaceContainer</item>
+        <item name="cardBackgroundColor">?attr/colorSurfaceContainer</item>
         <item name="cardCornerRadius">@dimen/corner_radius_md</item>
         <item name="cardElevation">0dp</item>
     </style>
 
     <!-- Splash Theme -->
-    <style name="Theme.CodeIDE.Splash" parent="Theme.Material3.Dark.NoActionBar">
-        <item name="android:windowBackground">#FF111411</item>
-        <item name="android:statusBarColor">#FF111411</item>
-        <item name="android:navigationBarColor">#FF111411</item>
+    <style name="Theme.CodeIDE.Splash" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowBackground">?attr/colorSurface</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+    </style>
+
+    <!-- Crash Theme -->
+    <style name="Theme.CodeIDE.Crash" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowBackground">?attr/colorSurface</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
     </style>
 

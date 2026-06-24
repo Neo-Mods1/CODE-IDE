@@ -14,40 +14,35 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.google.android.material.card.MaterialCardView
 import com.neo.ide.R
 
 class PermissionsActivity : AppCompatActivity() {
 
     private lateinit var storageStatus: TextView
-    private lateinit var storageIcon: ImageView
     private lateinit var storageGrantBtn: Button
+    private lateinit var installStatus: TextView
+    private lateinit var installGrantBtn: Button
     private lateinit var continueBtn: Button
 
     private val storagePermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        val allGranted = permissions.values.all { it }
-        if (allGranted) {
-            updateStorageStatus(true)
-        } else {
-            updateStorageStatus(false)
-            Toast.makeText(this, "Storage permission is required", Toast.LENGTH_LONG).show()
-        }
+        updateAllPermissions()
     }
 
     private val manageStorageLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            updateStorageStatus(Environment.isExternalStorageManager())
-        }
+        updateAllPermissions()
     }
 
     private val installPackagesLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) {
-        updateInstallStatus()
+        updateAllPermissions()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,54 +50,54 @@ class PermissionsActivity : AppCompatActivity() {
         setContentView(R.layout.activity_permissions)
 
         storageStatus = findViewById(R.id.permission_storage_status)
-        storageIcon = findViewById(R.id.permission_storage_icon)
         storageGrantBtn = findViewById(R.id.permission_storage_grant_btn)
+        installStatus = findViewById(R.id.permission_install_status)
+        installGrantBtn = findViewById(R.id.permission_install_grant_btn)
         continueBtn = findViewById(R.id.permissions_continue_btn)
-
-        val title = findViewById<TextView>(R.id.permissions_title)
-        val subtitle = findViewById<TextView>(R.id.permissions_subtitle)
-
-        title.text = "Permissions Required"
-        subtitle.text = "CODE-IDE needs storage access to read and write project files"
 
         storageGrantBtn.setOnClickListener {
             requestStoragePermission()
         }
 
-        continueBtn.setOnClickListener {
-            if (isStoragePermissionGranted()) {
-                val intent = Intent(this, MainActivity::class.java)
-                startActivity(intent)
-                finish()
-                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-            } else {
-                Toast.makeText(this, "Please grant storage permission to continue", Toast.LENGTH_SHORT).show()
-            }
+        installGrantBtn.setOnClickListener {
+            requestInstallPackagesPermission()
         }
 
-        updateStorageStatus(isStoragePermissionGranted())
+        continueBtn.setOnClickListener {
+            val intent = Intent(this, MainActivity::class.java)
+            startActivity(intent)
+            finish()
+            @Suppress("DEPRECATION")
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        }
+
+        updateAllPermissions()
     }
 
     private fun isStoragePermissionGranted(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             Environment.isExternalStorageManager()
         } else {
-            ContextCompat.checkSelfPermission(
+            ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.READ_EXTERNAL_STORAGE
             ) == PackageManager.PERMISSION_GRANTED &&
-            ContextCompat.checkSelfPermission(
+            ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE
             ) == PackageManager.PERMISSION_GRANTED
         }
     }
 
+    private fun canRequestPackageInstalls(): Boolean {
+        return packageManager.canRequestPackageInstalls()
+    }
+
     private fun requestStoragePermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             try {
                 val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
-                    data = Uri.parse("package:$packageName")
+                    data = Uri.fromParts("package", packageName, null)
                 }
                 manageStorageLauncher.launch(intent)
             } catch (e: Exception) {
@@ -119,34 +114,51 @@ class PermissionsActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateStorageStatus(granted: Boolean) {
-        if (granted) {
-            storageStatus.text = "Granted"
-            storageStatus.setTextColor(ContextCompat.getColor(this, R.color.status_success))
-            storageIcon.setImageResource(android.R.drawable.ic_secure)
-            storageIcon.setColorFilter(ContextCompat.getColor(this, R.color.status_success))
-            storageGrantBtn.isEnabled = false
-            storageGrantBtn.text = "Granted"
-            continueBtn.alpha = 1f
-            continueBtn.isEnabled = true
-        } else {
-            storageStatus.text = "Not Granted"
-            storageStatus.setTextColor(ContextCompat.getColor(this, R.color.status_error))
-            storageIcon.setImageResource(android.R.drawable.ic_lock_lock)
-            storageIcon.setColorFilter(ContextCompat.getColor(this, R.color.status_error))
-            storageGrantBtn.isEnabled = true
-            storageGrantBtn.text = "Grant Permission"
-            continueBtn.alpha = 0.5f
-            continueBtn.isEnabled = false
+    private fun requestInstallPackagesPermission() {
+        val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+            data = Uri.fromParts("package", packageName, null)
         }
+        installPackagesLauncher.launch(intent)
     }
 
-    private fun updateInstallStatus() {
-        // Update UI if needed
+    private fun updateAllPermissions() {
+        val storageGranted = isStoragePermissionGranted()
+        val installGranted = canRequestPackageInstalls()
+
+        // Storage
+        if (storageGranted) {
+            storageStatus.text = "Granted"
+            storageStatus.setTextColor(ContextCompat.getColor(this, R.color.status_success))
+            storageGrantBtn.isEnabled = false
+            storageGrantBtn.text = "Granted"
+        } else {
+            storageStatus.text = "Required"
+            storageStatus.setTextColor(ContextCompat.getColor(this, R.color.status_error))
+            storageGrantBtn.isEnabled = true
+            storageGrantBtn.text = "Grant"
+        }
+
+        // Install packages
+        if (installGranted) {
+            installStatus.text = "Granted"
+            installStatus.setTextColor(ContextCompat.getColor(this, R.color.status_success))
+            installGrantBtn.isEnabled = false
+            installGrantBtn.text = "Granted"
+        } else {
+            installStatus.text = "Required"
+            installStatus.setTextColor(ContextCompat.getColor(this, R.color.status_error))
+            installGrantBtn.isEnabled = true
+            installGrantBtn.text = "Grant"
+        }
+
+        // Continue button
+        val allGranted = storageGranted && installGranted
+        continueBtn.isEnabled = allGranted
+        continueBtn.alpha = if (allGranted) 1f else 0.5f
     }
 
     override fun onResume() {
         super.onResume()
-        updateStorageStatus(isStoragePermissionGranted())
+        updateAllPermissions()
     }
 }

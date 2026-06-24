@@ -1,7 +1,7 @@
 package com.neo.ide
 
 import android.app.Application
-import android.os.StrictMode
+import com.neo.ide.crash.CrashHandler
 
 class App : Application() {
 
@@ -9,24 +9,7 @@ class App : Application() {
         super.onCreate()
         instance = this
 
-        if (BuildConfig.DEBUG) {
-            setupStrictMode()
-        }
-    }
-
-    private fun setupStrictMode() {
-        StrictMode.setThreadPolicy(
-            StrictMode.ThreadPolicy.Builder()
-                .detectAll()
-                .penaltyLog()
-                .build()
-        )
-        StrictMode.setVmPolicy(
-            StrictMode.VmPolicy.Builder()
-                .detectAll()
-                .penaltyLog()
-                .build()
-        )
+        CrashHandler(this).init()
     }
 
     companion object {

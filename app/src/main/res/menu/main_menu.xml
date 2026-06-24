@@ -22,7 +22,7 @@
 
     <item
         android:id="@+id/action_redo"
-        android:icon="@android:drawable/ic_menu_redo"
+        android:icon="@android:drawable/ic_menu_send"
         android:title="@string/toolbar_redo"
         app:showAsAction="never" />
 

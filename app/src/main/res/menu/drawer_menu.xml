@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/drawer_files"
+            android:icon="@android:drawable/ic_menu_agenda"
+            android:title="@string/drawer_project_files"
+            app:showAsAction="always" />
+        <item
+            android:id="@+id/drawer_search"
+            android:icon="@android:drawable/ic_menu_search"
+            android:title="@string/drawer_search"
+            app:showAsAction="always" />
+        <item
+            android:id="@+id/drawer_logs"
+            android:icon="@android:drawable/ic_menu_info_details"
+            android:title="@string/drawer_logs"
+            app:showAsAction="always" />
+    </group>
+
+    <group android:checkableBehavior="none" app:showAsAction="always">
+        <item
+            android:id="@+id/drawer_settings"
+            android:icon="@android:drawable/ic_menu_preferences"
+            android:title="@string/drawer_settings"
+            app:showAsAction="always" />
+    </group>
+
+</menu>

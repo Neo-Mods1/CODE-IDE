@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Primary -->
+    <color name="md_theme_primary">#FF81C784</color>
+    <color name="md_theme_onPrimary">#FF003D00</color>
+    <color name="md_theme_primaryContainer">#FF005312</color>
+    <color name="md_theme_onPrimaryContainer">#FF6EE978</color>
+
+    <!-- Secondary -->
+    <color name="md_theme_secondary">#FFB0CCA6</color>
+    <color name="md_theme_onSecondary">#FF1B3622</color>
+    <color name="md_theme_secondaryContainer">#FF324D38</color>
+    <color name="md_theme_onSecondaryContainer">#FFCCE9C0</color>
+
+    <!-- Surface -->
+    <color name="md_theme_surface">#FFF8FAF5</color>
+    <color name="md_theme_onSurface">#FF1A1C19</color>
+    <color name="md_theme_surfaceVariant">#FFDDE5D7</color>
+    <color name="md_theme_onSurfaceVariant">#FF414941</color>
+    <color name="md_theme_surfaceContainer">#FFF0F2ED</color>
+    <color name="md_theme_surfaceContainerLow">#FFF8FAF5</color>
+    <color name="md_theme_surfaceContainerHigh">#FFE8EAE5</color>
+    <color name="md_theme_surfaceContainerHighest">#FFE2E4DF</color>
+
+    <!-- Background -->
+    <color name="md_theme_background">#FFF8FAF5</color>
+    <color name="md_theme_onBackground">#FF1A1C19</color>
+
+    <!-- Outline -->
+    <color name="md_theme_outline">#FFC1C9BE</color>
+    <color name="md_theme_outlineVariant">#FFDDE5D7</color>
+
+    <!-- IDE Specific (Light) -->
+    <color name="editor_background">#FFFAFAFA</color>
+    <color name="editor_line_number">#FF9E9E9E</color>
+    <color name="editor_cursor">#FF4CAF50</color>
+    <color name="editor_selection">#224CAF50</color>
+    <color name="editor_current_line">#08000000</color>
+
+    <color name="tab_active">#FF4CAF50</color>
+    <color name="tab_inactive">#FFF5F5F5</color>
+    <color name="tab_text_active">#FFFFFFFF</color>
+    <color name="tab_text_inactive">#FF757575</color>
+    <color name="tab_dirty_indicator">#FFFFC107</color>
+
+    <color name="drawer_background">#FFF5F5F5</color>
+    <color name="drawer_header_background">#FFFAFAFA</color>
+    <color name="drawer_item_selected">#1A4CAF50</color>
+    <color name="drawer_item_text">#FF424242</color>
+    <color name="drawer_item_icon">#FF757575</color>
+
+    <color name="bottom_panel_background">#FFF5F5F5</color>
+    <color name="bottom_panel_tab_active">#FF4CAF50</color>
+    <color name="bottom_panel_tab_inactive">#FF9E9E9E</color>
+
+</resources>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/drawer_item_height"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="@dimen/drawer_item_padding"
+    android:paddingEnd="@dimen/drawer_item_padding"
+    android:background="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true">
+
+    <!-- Indent Spacer (dynamic) -->
+    <View
+        android:id="@+id/indent_spacer"
+        android:layout_width="0dp"
+        android:layout_height="0dp" />
+
+    <!-- Expand/Collapse Icon -->
+    <ImageView
+        android:id="@+id/expand_icon"
+        android:layout_width="@dimen/icon_size_small"
+        android:layout_height="@dimen/icon_size_small"
+        android:layout_marginEnd="@dimen/spacing_xs"
+        android:alpha="0.5" />
+
+    <!-- File/Folder Icon -->
+    <ImageView
+        android:id="@+id/file_icon"
+        android:layout_width="@dimen/drawer_item_icon_size"
+        android:layout_height="@dimen/drawer_item_icon_size"
+        android:layout_marginEnd="@dimen/spacing_sm" />
+
+    <!-- File/Folder Name -->
+    <TextView
+        android:id="@+id/file_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textColor="@color/drawer_item_text"
+        android:textSize="@dimen/drawer_item_text_size"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <!-- Dirty Indicator -->
+    <View
+        android:id="@+id/dirty_indicator"
+        android:layout_width="@dimen/tab_dirty_size"
+        android:layout_height="@dimen/tab_dirty_size"
+        android:layout_marginStart="@dimen/spacing_xs"
+        android:background="@drawable/bg_dirty_indicator"
+        android:visibility="gone" />
+
+</LinearLayout>

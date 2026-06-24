@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_tab_save"
+        android:title="@string/editor_tab_save"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_tab_format"
+        android:title="@string/editor_tab_format"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_tab_close"
+        android:title="@string/editor_tab_close"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_tab_close_others"
+        android:title="@string/editor_tab_close_others"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_tab_close_all"
+        android:title="@string/editor_tab_close_all"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_tab_copy_path"
+        android:title="@string/editor_tab_copy_path"
+        app:showAsAction="never" />
+
+</menu>

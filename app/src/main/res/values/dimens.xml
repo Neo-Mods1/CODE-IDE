@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <dimen name="toolbar_height">?attr/actionBarSize</dimen>
+    <dimen name="tab_height">40dp</dimen>
+    <dimen name="tab_min_width">100dp</dimen>
+    <dimen name="tab_max_width">200dp</dimen>
+    <dimen name="tab_text_size">12sp</dimen>
+    <dimen name="tab_icon_size">16dp</dimen>
+    <dimen name="tab_close_size">16dp</dimen>
+    <dimen name="tab_dirty_size">8dp</dimen>
+    <dimen name="tab_padding_horizontal">12dp</dimen>
+    <dimen name="tab_padding_vertical">6dp</dimen>
+
+    <dimen name="drawer_width">280dp</dimen>
+    <dimen name="drawer_header_height">48dp</dimen>
+    <dimen name="drawer_item_height">36dp</dimen>
+    <dimen name="drawer_item_padding">16dp</dimen>
+    <dimen name="drawer_item_text_size">13sp</dimen>
+    <dimen name="drawer_item_icon_size">20dp</dimen>
+    <dimen name="drawer_section_padding">8dp</dimen>
+    <dimen name="drawer_indent_size">16dp</dimen>
+
+    <dimen name="bottom_panel_min_height">48dp</dimen>
+    <dimen name="bottom_panel_default_height">200dp</dimen>
+    <dimen name="bottom_panel_max_height">400dp</dimen>
+    <dimen name="bottom_panel_handle_height">4dp</dimen>
+    <dimen name="bottom_panel_handle_width">40dp</dimen>
+    <dimen name="bottom_panel_tab_height">36dp</dimen>
+    <dimen name="bottom_panel_tab_text_size">12sp</dimen>
+
+    <dimen name="editor_padding_horizontal">4dp</dimen>
+    <dimen name="editor_padding_vertical">0dp</dimen>
+    <dimen name="editor_line_number_width">48dp</dimen>
+
+    <dimen name="icon_size_small">16dp</dimen>
+    <dimen name="icon_size_medium">20dp</dimen>
+    <dimen name="icon_size_large">24dp</dimen>
+    <dimen name="icon_size_xlarge">32dp</dimen>
+
+    <dimen name="spacing_xs">4dp</dimen>
+    <dimen name="spacing_sm">8dp</dimen>
+    <dimen name="spacing_md">12dp</dimen>
+    <dimen name="spacing_lg">16dp</dimen>
+    <dimen name="spacing_xl">24dp</dimen>
+
+    <dimen name="corner_radius_sm">4dp</dimen>
+    <dimen name="corner_radius_md">8dp</dimen>
+    <dimen name="corner_radius_lg">12dp</dimen>
+    <dimen name="corner_radius_xl">16dp</dimen>
+
+    <dimen name="elevation_low">2dp</dimen>
+    <dimen name="elevation_medium">4dp</dimen>
+    <dimen name="elevation_high">8dp</dimen>
+
+    <dimen name="status_bar_height">0dp</dimen>
+    <dimen name="navigation_bar_height">0dp</dimen>
+
+</resources>

@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.drawerlayout.widget.DrawerLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/drawer_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    tools:openDrawer="start">
+
+    <!-- Main Content -->
+    <LinearLayout
+        android:id="@+id/main_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:fitsSystemWindows="true">
+
+        <!-- Toolbar -->
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/md_theme_surface"
+            app:title="@string/app_name"
+            app:titleTextColor="@color/md_theme_onSurface"
+            app:navigationIcon="@android:drawable/ic_menu_sort_by_size"
+            app:navigationIconTint="@color/md_theme_onSurface"
+            app:elevation="0dp" />
+
+        <!-- Editor Tabs -->
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/editor_tabs"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/tab_height"
+            android:background="@color/md_theme_surfaceContainer"
+            style="@style/CodeIDE.TabLayout"
+            app:tabIndicatorHeight="2dp"
+            app:tabIndicatorColor="@color/tab_active"
+            app:tabSelectedTextColor="@color/tab_text_active"
+            app:tabTextColor="@color/tab_text_inactive"
+            app:tabMode="scrollable"
+            app:tabGravity="start"
+            app:tabRippleColor="@android:color/transparent"
+            app:tabBackground="@color/tab_inactive" />
+
+        <!-- Editor and Bottom Panel Container -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <!-- Editor Container -->
+            <FrameLayout
+                android:id="@+id/editor_container"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <!-- Editor Placeholder (shown when no file is open) -->
+                <LinearLayout
+                    android:id="@+id/editor_placeholder"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="@color/editor_background"
+                    android:padding="@dimen/spacing_xl">
+
+                    <ImageView
+                        android:layout_width="@dimen/icon_size_xlarge"
+                        android:layout_height="@dimen/icon_size_xlarge"
+                        android:src="@android:drawable/ic_menu_edit"
+                        android:alpha="0.3"
+                        android:layout_marginBottom="@dimen/spacing_lg" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/editor_no_file_open"
+                        android:textColor="@color/md_theme_onSurface"
+                        android:textSize="16sp"
+                        android:alpha="0.5"
+                        android:layout_marginBottom="@dimen/spacing_sm" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/editor_open_file_hint"
+                        android:textColor="@color/md_theme_onSurfaceVariant"
+                        android:textSize="13sp"
+                        android:alpha="0.4"
+                        android:gravity="center" />
+
+                </LinearLayout>
+
+                <!-- Code Editor Area (populated dynamically) -->
+                <FrameLayout
+                    android:id="@+id/code_editor_area"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@color/editor_background"
+                    android:visibility="gone" />
+
+            </FrameLayout>
+
+            <!-- Bottom Panel -->
+            <LinearLayout
+                android:id="@+id/bottom_panel"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/bottom_panel_default_height"
+                android:orientation="vertical"
+                android:background="@color/bottom_panel_background"
+                android:layout_gravity="bottom"
+                android:elevation="@dimen/elevation_medium">
+
+                <!-- Drag Handle -->
+                <FrameLayout
+                    android:id="@+id/bottom_panel_handle"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/bottom_panel_handle_height"
+                    android:background="@color/bottom_panel_background"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <View
+                        android:layout_width="@dimen/bottom_panel_handle_width"
+                        android:layout_height="@dimen/bottom_panel_handle_height"
+                        android:layout_gravity="center"
+                        android:background="@drawable/bg_panel_handle" />
+
+                </FrameLayout>
+
+                <!-- Bottom Panel Tabs -->
+                <com.google.android.material.tabs.TabLayout
+                    android:id="@+id/bottom_panel_tabs"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/bottom_panel_tab_height"
+                    android:background="@color/bottom_panel_background"
+                    style="@style/CodeIDE.BottomPanel.TabLayout"
+                    app:tabIndicatorHeight="2dp"
+                    app:tabIndicatorColor="@color/bottom_panel_tab_active"
+                    app:tabSelectedTextColor="@color/bottom_panel_tab_active"
+                    app:tabTextColor="@color/bottom_panel_tab_inactive"
+                    app:tabMode="fixed"
+                    app:tabGravity="fill"
+                    app:tabRippleColor="@android:color/transparent" />
+
+                <!-- Bottom Panel Content -->
+                <androidx.viewpager2.widget.ViewPager2
+                    android:id="@+id/bottom_panel_viewpager"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+            </LinearLayout>
+
+        </FrameLayout>
+
+    </LinearLayout>
+
+    <!-- Navigation Drawer (File Tree Sidebar) -->
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/navigation_drawer"
+        android:layout_width="@dimen/drawer_width"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:fitsSystemWindows="true"
+        style="@style/CodeIDE.Drawer"
+        app:headerLayout="@layout/layout_drawer_header"
+        app:menu="@menu/drawer_menu">
+
+        <!-- File Tree Content -->
+        <FrameLayout
+            android:id="@+id/drawer_content_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="@dimen/drawer_header_height">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/file_tree_recycler"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingTop="@dimen/spacing_sm"
+                android:paddingBottom="@dimen/spacing_sm"
+                android:scrollbars="vertical"
+                android:overScrollMode="never" />
+
+        </FrameLayout>
+
+    </com.google.android.material.navigation.NavigationView>
+
+</androidx.drawerlayout.widget.DrawerLayout>

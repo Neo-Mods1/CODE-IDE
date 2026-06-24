@@ -1,0 +1,92 @@
+name: Build Android App
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    - name: Build Debug APK
+      id: build
+      run: |
+        ./gradlew assembleDebug --stacktrace 2>&1 | tee build_output.log
+        echo "BUILD_STATUS=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+
+    - name: Upload APK artifact
+      if: steps.build.outputs.BUILD_STATUS == '0'
+      uses: actions/upload-artifact@v4
+      with:
+        name: CODE-IDE-debug
+        path: app/build/outputs/apk/debug/*.apk
+        retention-days: 7
+
+    - name: Send success notification to Telegram
+      if: steps.build.outputs.BUILD_STATUS == '0'
+      run: |
+        APK_SIZE=$(du -h app/build/outputs/apk/debug/*.apk | cut -f1)
+        curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+          -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+          -d parse_mode="Markdown" \
+          -d text="✅ *BUILD SUCCESSFUL*
+
+📦 *CODE-IDE* build completed successfully!
+
+📥 Download APK from Actions Artifacts:
+🔗 https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+📏 APK Size: ${APK_SIZE}
+🕐 Built at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+🔀 Branch: ${{ github.ref_name }}
+📝 Commit: ${{ github.event.head_commit.message || github.event.pull_request.title || 'N/A' }}"
+
+    - name: Send failure notification to Telegram
+      if: steps.build.outputs.BUILD_STATUS != '0'
+      run: |
+        ERROR_LOG=$(tail -100 build_output.log | sed 's/"/\\"/g' | sed 's/&/\&/g' | sed 's/</\</g' | sed 's/>/\>/g')
+        
+        curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+          -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+          -d parse_mode="Markdown" \
+          -d text="❌ *BUILD FAILED*
+
+🔴 *CODE-IDE* build failed!
+
+📋 *Error Log (last 100 lines):*
+\`\`\`
+${ERROR_LOG}
+\`\`\`
+
+🔗 Check full logs:
+https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+🔀 Branch: ${{ github.ref_name }}
+📝 Commit: ${{ github.event.head_commit.message || github.event.pull_request.title || 'N/A' }}"
+
+    - name: Upload build log on failure
+      if: steps.build.outputs.BUILD_STATUS != '0'
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-log
+        path: build_output.log
+        retention-days: 3

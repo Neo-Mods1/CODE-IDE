@@ -58,7 +58,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bottomPanelTabs: TabLayout
     private lateinit var bottomPanelViewpager: ViewPager2
     private lateinit var fileTreeRecycler: RecyclerView
-    private lateinit var projectNameText: TextView
+    private var projectNameText: TextView? = null
 
     private lateinit var fileTreeAdapter: FileTreeAdapter
     private lateinit var editorTabAdapter: EditorTabAdapter
@@ -94,7 +94,7 @@ class MainActivity : AppCompatActivity() {
         bottomPanelTabs = findViewById(R.id.bottom_panel_tabs)
         bottomPanelViewpager = findViewById(R.id.bottom_panel_viewpager)
         fileTreeRecycler = findViewById(R.id.file_tree_recycler)
-        projectNameText = navigationView.findViewById(R.id.drawer_project_name)
+        projectNameText = navigationView.getHeaderView(0)?.findViewById(R.id.drawer_project_name)
     }
 
     private fun setupToolbar() {
@@ -223,7 +223,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         currentProjectRoot = demoProject
-        projectNameText.text = demoProject.name
+        projectNameText?.text = demoProject.name
 
         rootFileNodes.clear()
         rootFileNodes.addAll(FileUtils.buildFileTree(demoProject))

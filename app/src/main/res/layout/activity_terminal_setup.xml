@@ -35,33 +35,4 @@
         android:paddingTop="2dp"
         android:paddingBottom="4dp" />
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingHorizontal="12dp"
-        android:paddingVertical="6dp"
-        android:background="#FF000000">
-
-        <TextView
-            android:id="@+id/setup_status_text"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text=""
-            android:textColor="#FF888888"
-            android:textSize="11sp"
-            android:fontFamily="monospace" />
-
-        <ProgressBar
-            android:id="@+id/setup_progress"
-            style="?android:attr/progressBarStyleSmall"
-            android:layout_width="14dp"
-            android:layout_height="14dp"
-            android:indeterminate="true"
-            android:indeterminateTint="#FF888888"
-            android:visibility="gone" />
-    </LinearLayout>
-
 </LinearLayout>

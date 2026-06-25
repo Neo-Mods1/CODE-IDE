@@ -1,12 +1,13 @@
 package com.neo.ide.setup
 
+import android.graphics.Color
+import android.graphics.Typeface
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.TypedValue
 import android.view.MotionEvent
 import android.view.View
-import android.widget.ProgressBar
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.neo.ide.R
 import com.neo.ide.download.ResourceManager
@@ -25,31 +26,38 @@ import android.view.KeyEvent
 class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
 
     private lateinit var terminalView: TerminalView
-    private lateinit var statusText: TextView
-    private lateinit var progressBar: ProgressBar
     private val handler = Handler(Looper.getMainLooper())
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private val resourceManager by lazy { ResourceManager(this) }
 
     private var terminalSession: TerminalSession? = null
     private val pendingOutput = mutableListOf<String>()
+    private var currentFontSize = 0
+    private var scaleFactor = 1.0f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_terminal_setup)
 
-        window.decorView.setBackgroundColor(0xFF000000.toInt())
-        window.statusBarColor = 0xFF000000.toInt()
-        window.navigationBarColor = 0xFF000000.toInt()
+        window.decorView.setBackgroundColor(Color.BLACK)
+        window.statusBarColor = Color.BLACK
+        window.navigationBarColor = Color.BLACK
 
         terminalView = findViewById(R.id.terminal_view)
-        statusText = findViewById(R.id.setup_status_text)
-        progressBar = findViewById(R.id.setup_progress)
         val extraKeys = findViewById<ExtraKeysView>(R.id.extra_keys_view)
         extraKeys.setTerminalView(terminalView)
 
+        currentFontSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 14f, resources.displayMetrics).toInt()
+
         terminalView.setTerminalViewClient(object : TerminalViewClient {
-            override fun onScale(scale: Float): Float = 1.0f
+            override fun onScale(scale: Float): Float {
+                if (scale < 0.9f || scale > 1.1f) {
+                    val increase = scale > 1f
+                    changeFontSize(increase)
+                    return 1.0f
+                }
+                return scale
+            }
             override fun onSingleTapUp(e: MotionEvent) {}
             override fun shouldBackButtonBeMappedToEscape(): Boolean = false
             override fun shouldEnforceCharBasedInput(): Boolean = false
@@ -65,6 +73,10 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
             override fun readFnKey(): Boolean = false
             override fun onCodePoint(codePoint: Int, ctrlDown: Boolean, session: TerminalSession?): Boolean = false
             override fun onEmulatorSet() {
+                val session = terminalSession ?: return
+                session.emulator?.let { em ->
+                    window.decorView.setBackgroundColor(em.mColors.mCurrentColors[257])
+                }
                 flushPendingOutput()
             }
             override fun logError(tag: String, message: String) {}
@@ -80,7 +92,7 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
         val cwd = filesDir.absolutePath
         terminalSession = TerminalSession(shell, cwd, arrayOf(shell), null, null, this)
         terminalSession?.mSessionName = "setup"
-        terminalView.setTextSize(10)
+        terminalView.setTextSize(currentFontSize)
         terminalView.attachSession(terminalSession)
 
         val selectedResourcesJson = intent.getStringExtra("selected_resources")
@@ -93,6 +105,15 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
                 runSetupLegacy()
             }
         }
+    }
+
+    private fun changeFontSize(increase: Boolean) {
+        val delta = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 2f, resources.displayMetrics).toInt()
+        currentFontSize = if (increase) currentFontSize + delta else currentFontSize - delta
+        val minSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 4f, resources.displayMetrics).toInt()
+        val maxSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 256f, resources.displayMetrics).toInt()
+        currentFontSize = currentFontSize.coerceIn(minSize, maxSize)
+        terminalView.setTextSize(currentFontSize)
     }
 
     private fun flushPendingOutput() {
@@ -169,8 +190,6 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
 
         writeToTerminal("\u001B[33mNeed to download ${toInstall.size} resources.\u001B[0m\r\n\r\n")
 
-        handler.post { progressBar.visibility = View.VISIBLE }
-
         scope.launch {
             val success = withContext(Dispatchers.IO) {
                 resourceManager.downloadResources(
@@ -180,9 +199,7 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
                     },
                     onResourceProgress = { resource, progress ->
                         val pct = (progress * 100).toInt()
-                        handler.post {
-                            statusText.text = "Downloading ${resource.name}... $pct%"
-                        }
+                        writeToTerminal("\u001B[33m  ${resource.name}: $pct%\u001B[0m\r")
                     },
                     onResourceComplete = { resource ->
                         writeToTerminal("  \u001B[32m\u2713\u001B[0m Downloaded ${resource.name}\r\n")
@@ -195,8 +212,6 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
 
             if (!success) {
                 writeToTerminal("\r\n\u001B[31mDownload failed. Check your connection and try again.\u001B[0m\r\n")
-                updateStatus("Failed")
-                handler.post { progressBar.visibility = View.GONE }
                 return@launch
             }
 
@@ -237,8 +252,6 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
             if (manifestResult.isFailure) {
                 writeToTerminal("\u001B[31mERROR: Failed to fetch manifest: ${manifestResult.exceptionOrNull()?.message}\u001B[0m\r\n")
                 writeToTerminal("\u001B[33mCheck your internet connection and try again.\u001B[0m\r\n")
-                updateStatus("Failed")
-                handler.post { progressBar.visibility = View.GONE }
                 return@launch
             }
 
@@ -260,8 +273,6 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
             }
             writeToTerminal("\r\n")
 
-            handler.post { progressBar.visibility = View.VISIBLE }
-
             val success = withContext(Dispatchers.IO) {
                 resourceManager.downloadResources(
                     requiredResources,
@@ -270,9 +281,7 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
                     },
                     onResourceProgress = { resource, progress ->
                         val pct = (progress * 100).toInt()
-                        handler.post {
-                            statusText.text = "Downloading ${resource.name}... $pct%"
-                        }
+                        writeToTerminal("\u001B[33m  ${resource.name}: $pct%\u001B[0m\r")
                     },
                     onResourceComplete = { resource ->
                         writeToTerminal("  \u001B[32m\u2713\u001B[0m Downloaded ${resource.name}\r\n")
@@ -285,8 +294,6 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
 
             if (!success) {
                 writeToTerminal("\r\n\u001B[31mDownload failed. Please check your connection and try again.\u001B[0m\r\n")
-                updateStatus("Failed")
-                handler.post { progressBar.visibility = View.GONE }
                 return@launch
             }
 
@@ -318,17 +325,10 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
 
     private fun finishSetup() {
         SetupState.setSetupComplete(this, true)
-        updateStatus("Complete")
         handler.postDelayed({
             startActivity(Intent(this, MainActivity::class.java))
             finish()
         }, 1500)
-    }
-
-    private fun updateStatus(text: String) {
-        handler.post {
-            statusText.text = text
-        }
     }
 
     override fun onDestroy() {

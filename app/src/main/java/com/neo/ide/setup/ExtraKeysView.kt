@@ -49,6 +49,10 @@ class ExtraKeysView @JvmOverloads constructor(
         terminalView = view
     }
 
+    fun isCtrlActive(): Boolean = ctrlActive
+    fun isAltActive(): Boolean = altActive
+    fun isShiftActive(): Boolean = shiftActive
+
     private fun buildKeys() {
         removeAllViews()
         for ((row, rowKeys) in keys.withIndex()) {

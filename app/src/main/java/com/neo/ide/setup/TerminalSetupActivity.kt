@@ -41,6 +41,7 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
 
     private lateinit var terminalView: TerminalView
     private lateinit var drawerLayout: DrawerLayout
+    private lateinit var extraKeysView: ExtraKeysView
     private lateinit var sessionListView: ListView
     private val handler = Handler(Looper.getMainLooper())
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -63,13 +64,20 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
         window.statusBarColor = Color.BLACK
         window.navigationBarColor = Color.BLACK
 
+        // If setup already complete, go straight to HomeActivity
+        if (SetupState.isSetupComplete(this)) {
+            startActivity(Intent(this, HomeActivity::class.java))
+            finish()
+            return
+        }
+
         terminalView = findViewById(R.id.terminal_view)
         drawerLayout = findViewById(R.id.drawer_layout)
         sessionListView = findViewById(R.id.terminal_sessions_list)
-        val extraKeys = findViewById<ExtraKeysView>(R.id.extra_keys_view)
-        extraKeys.setTerminalView(terminalView)
+        extraKeysView = findViewById(R.id.extra_keys_view)
+        extraKeysView.setTerminalView(terminalView)
 
-        // AndroidIDE default: 12dp font size
+        // AndroidIDE default: 12sp font size
         currentFontSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12f, resources.displayMetrics).toInt()
 
         // Toggle keyboard button
@@ -133,9 +141,9 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
             override fun onKeyDown(keyCode: Int, e: KeyEvent, session: TerminalSession?): Boolean = false
             override fun onKeyUp(keyCode: Int, e: KeyEvent): Boolean = false
             override fun onLongPress(event: MotionEvent): Boolean = false
-            override fun readControlKey(): Boolean = false
-            override fun readAltKey(): Boolean = false
-            override fun readShiftKey(): Boolean = false
+            override fun readControlKey(): Boolean = extraKeysView.isCtrlActive()
+            override fun readAltKey(): Boolean = extraKeysView.isAltActive()
+            override fun readShiftKey(): Boolean = extraKeysView.isShiftActive()
             override fun readFnKey(): Boolean = false
             override fun onCodePoint(codePoint: Int, ctrlDown: Boolean, session: TerminalSession?): Boolean = false
             override fun onEmulatorSet() {
@@ -209,8 +217,8 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
     private fun switchToSession(session: TerminalSession) {
         if (session == currentSession) return
         currentSession = session
-        terminalView.setTextSize(currentFontSize)
         terminalView.attachSession(session)
+        terminalView.setTextSize(currentFontSize)
         sessionAdapter.notifyDataSetChanged()
     }
 
@@ -437,6 +445,14 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
             startActivity(Intent(this, HomeActivity::class.java))
             finish()
         }, 1500)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (SetupState.isSetupComplete(this)) {
+            startActivity(Intent(this, HomeActivity::class.java))
+            finish()
+        }
     }
 
     override fun onDestroy() {

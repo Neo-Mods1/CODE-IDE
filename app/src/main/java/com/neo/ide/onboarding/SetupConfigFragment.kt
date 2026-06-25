@@ -42,6 +42,12 @@ class SetupConfigFragment : Fragment() {
     private var manifest: ResourceManager.Manifest? = null
     private val selectedResources = mutableMapOf<String, SelectedResource>()
 
+    // Categories always auto-downloaded (not shown in UI)
+    private val autoCategories = setOf("licenses", "cmdline_tools", "platform_tools", "build_tools")
+
+    // Categories shown in UI: platforms (required), gradle (required), ndk (optional)
+    private val visibleCategories = listOf("platforms", "gradle", "ndk")
+
     data class SelectedResource(
         val category: String,
         val name: String,
@@ -156,13 +162,28 @@ class SetupConfigFragment : Fragment() {
         resourcesContainer.removeAllViews()
         selectedResources.clear()
 
-        // Group resources by category
         val grouped = manifest.resources.groupBy { it.category }
         val inflater = LayoutInflater.from(requireContext())
 
-        val categoryOrder = listOf("licenses", "cmdline_tools", "platform_tools", "build_tools", "platforms", "ndk", "gradle")
+        // Auto-select required categories (licenses, cmdline_tools, platform_tools, build_tools)
+        for (category in autoCategories) {
+            val resources = grouped[category] ?: continue
+            if (resources.isEmpty()) continue
+            val firstRes = resources[0]
+            selectedResources[category] = SelectedResource(
+                category = firstRes.category,
+                name = firstRes.name,
+                version = firstRes.version,
+                url = firstRes.url,
+                size = firstRes.size,
+                sha256 = firstRes.sha256,
+                format = firstRes.format,
+                destination = firstRes.destination
+            )
+        }
 
-        for (category in categoryOrder) {
+        // Show visible categories in UI
+        for (category in visibleCategories) {
             val resources = grouped[category] ?: continue
             if (resources.isEmpty()) continue
 
@@ -176,24 +197,34 @@ class SetupConfigFragment : Fragment() {
             val categoryLabel = manifest.categories[category] ?: category
             nameText.text = categoryLabel
 
-            // Start with first resource selected
             val firstRes = resources[0]
             sizeText.text = formatSize(firstRes.size)
 
-            checkbox.isChecked = true
-            selectedResources[category] = SelectedResource(
-                category = firstRes.category,
-                name = firstRes.name,
-                version = firstRes.version,
-                url = firstRes.url,
-                size = firstRes.size,
-                sha256 = firstRes.sha256,
-                format = firstRes.format,
-                destination = firstRes.destination
-            )
+            when (category) {
+                "ndk" -> {
+                    // NDK is optional - checkbox default unchecked
+                    checkbox.isChecked = false
+                    checkbox.isEnabled = true
+                    selectedResources.remove(category)
+                }
+                else -> {
+                    // Platforms and Gradle are required - checkbox checked and disabled
+                    checkbox.isChecked = true
+                    checkbox.isEnabled = false
+                    selectedResources[category] = SelectedResource(
+                        category = firstRes.category,
+                        name = firstRes.name,
+                        version = firstRes.version,
+                        url = firstRes.url,
+                        size = firstRes.size,
+                        sha256 = firstRes.sha256,
+                        format = firstRes.format,
+                        destination = firstRes.destination
+                    )
+                }
+            }
 
             if (resources.size > 1) {
-                // Multiple versions - show dropdown
                 versionContainer.visibility = View.VISIBLE
                 val versions = resources.map { it.version }.toTypedArray()
                 val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, versions)
@@ -202,16 +233,18 @@ class SetupConfigFragment : Fragment() {
 
                 versionDropdown.setOnItemClickListener { _, _, position, _ ->
                     val selected = resources[position]
-                    selectedResources[category] = SelectedResource(
-                        category = selected.category,
-                        name = selected.name,
-                        version = selected.version,
-                        url = selected.url,
-                        size = selected.size,
-                        sha256 = selected.sha256,
-                        format = selected.format,
-                        destination = selected.destination
-                    )
+                    if (checkbox.isChecked) {
+                        selectedResources[category] = SelectedResource(
+                            category = selected.category,
+                            name = selected.name,
+                            version = selected.version,
+                            url = selected.url,
+                            size = selected.size,
+                            sha256 = selected.sha256,
+                            format = selected.format,
+                            destination = selected.destination
+                        )
+                    }
                     sizeText.text = formatSize(selected.size)
                 }
             }
@@ -220,7 +253,6 @@ class SetupConfigFragment : Fragment() {
                 if (!isChecked) {
                     selectedResources.remove(category)
                 } else {
-                    // Re-add with current selection
                     val version = versionDropdown.text.toString()
                     val res = resources.find { it.version == version } ?: resources[0]
                     selectedResources[category] = SelectedResource(

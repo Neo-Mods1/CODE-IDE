@@ -105,7 +105,7 @@
     </RelativeLayout>
 
     <!-- Extra keys bar at bottom -->
-    <com.neo.ide.setup.ExtraKeysView
+    <com.termux.shared.termux.extrakeys.ExtraKeysView
         android:id="@+id/extra_keys_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

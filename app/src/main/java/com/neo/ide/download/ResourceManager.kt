@@ -129,11 +129,25 @@ class ResourceManager(private val context: Context) {
         val destPath = resource.destination.replace("{install_dir}", installDir.absolutePath)
         val destDir = File(destPath)
 
+        // Special handling for licenses
         if (resource.name == "licenses" || resource.name.contains("license")) {
             return File(installDir, "licenses").exists()
         }
 
-        return destDir.exists() && destDir.listFiles()?.isNotEmpty() == true
+        // Check if destination directory exists and has files
+        if (destDir.exists() && destDir.listFiles()?.isNotEmpty() == true) {
+            return true
+        }
+
+        // Also check if archive exists in cache (means it was downloaded but not extracted yet)
+        val cacheDir = getCacheDir()
+        val archiveName = "${resource.name.replace(" ", "_")}.tar.xz"
+        val archiveFile = File(cacheDir, archiveName)
+        if (archiveFile.exists() && archiveFile.length() > 0) {
+            return false // Archive exists but not extracted, need to extract
+        }
+
+        return false
     }
 
     fun getInstalledVersion(): String? {

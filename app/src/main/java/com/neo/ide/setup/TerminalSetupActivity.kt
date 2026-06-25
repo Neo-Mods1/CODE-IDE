@@ -29,6 +29,11 @@ import com.neo.ide.download.ResourceManager
 import com.neo.ide.download.SetupState
 import com.neo.ide.activities.HomeActivity
 import android.content.Intent
+import com.termux.shared.termux.extrakeys.ExtraKeysView
+import com.termux.shared.termux.extrakeys.ExtraKeysConstants
+import com.termux.shared.termux.extrakeys.ExtraKeysInfo
+import com.termux.shared.termux.extrakeys.SpecialButton
+import com.termux.shared.termux.terminal.io.TerminalExtraKeys
 import com.termux.terminal.TerminalSession
 import com.termux.terminal.TerminalSessionClient
 import com.termux.view.TerminalView
@@ -75,7 +80,36 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
         drawerLayout = findViewById(R.id.drawer_layout)
         sessionListView = findViewById(R.id.terminal_sessions_list)
         extraKeysView = findViewById(R.id.extra_keys_view)
-        extraKeysView.setTerminalView(terminalView)
+        extraKeysView.setExtraKeysViewClient(object : ExtraKeysView.IExtraKeysView {
+            override fun onExtraKeyButtonClick(view: View, buttonInfo: com.termux.shared.termux.extrakeys.ExtraKeyButton, button: com.google.android.material.button.MaterialButton) {
+                val key = buttonInfo.key
+                val session = currentSession ?: return
+                val keyCode = ExtraKeysConstants.PRIMARY_KEY_CODES_FOR_STRINGS[key]
+                if (keyCode != null) {
+                    val event = KeyEvent(KeyEvent.getEventTime(), KeyEvent.getEventTime(), KeyEvent.ACTION_UP, keyCode, 0)
+                    terminalView.onKeyDown(keyCode, event)
+                } else if (key.length == 1) {
+                    session.write(key)
+                }
+            }
+            override fun performExtraKeyButtonHapticFeedback(view: View, buttonInfo: com.termux.shared.termux.extrakeys.ExtraKeyButton, button: com.google.android.material.button.MaterialButton) = false
+        })
+
+        // Load extra keys from JSON config like AndroidIDE
+        try {
+            val configJson = "[[\"ESC\",\"/\",\"-\",\"HOME\",\"UP\",\"END\",\"PGUP\"],[\"TAB\",\"CTRL\",\"ALT\",\"LEFT\",\"DOWN\",\"RIGHT\",\"PGDN\"]]"
+            val extraKeysInfo = ExtraKeysInfo(configJson, "default", ExtraKeysConstants.CONTROL_CHARS_ALIASES)
+            extraKeysView.setButtonColors(
+                0xFFFFFFFF.toInt(),
+                0xFF80DEEA.toInt(),
+                0x00000000,
+                0xFF7F7F7F.toInt()
+            )
+            val heightPx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 37.5f, resources.displayMetrics)
+            extraKeysView.reload(extraKeysInfo, heightPx)
+        } catch (e: Exception) {
+            // Fallback: build simple grid
+        }
 
         // AndroidIDE default: 12sp font size
         currentFontSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12f, resources.displayMetrics).toInt()
@@ -141,10 +175,10 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
             override fun onKeyDown(keyCode: Int, e: KeyEvent, session: TerminalSession?): Boolean = false
             override fun onKeyUp(keyCode: Int, e: KeyEvent): Boolean = false
             override fun onLongPress(event: MotionEvent): Boolean = false
-            override fun readControlKey(): Boolean = extraKeysView.isCtrlActive()
-            override fun readAltKey(): Boolean = extraKeysView.isAltActive()
-            override fun readShiftKey(): Boolean = extraKeysView.isShiftActive()
-            override fun readFnKey(): Boolean = false
+            override fun readControlKey(): Boolean = extraKeysView.readSpecialButton(SpecialButton.CTRL, false) ?: false
+            override fun readAltKey(): Boolean = extraKeysView.readSpecialButton(SpecialButton.ALT, false) ?: false
+            override fun readShiftKey(): Boolean = extraKeysView.readSpecialButton(SpecialButton.SHIFT, false) ?: false
+            override fun readFnKey(): Boolean = extraKeysView.readSpecialButton(SpecialButton.FN, false) ?: false
             override fun onCodePoint(codePoint: Int, ctrlDown: Boolean, session: TerminalSession?): Boolean = false
             override fun onEmulatorSet() {
                 val session = currentSession ?: return

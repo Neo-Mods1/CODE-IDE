@@ -104,4 +104,5 @@ dependencies {
     implementation("org.tukaani:xz:1.9")
     implementation("org.json:json:20231013")
     implementation(project(":termux:view"))
+    implementation(project(":termux:shared"))
 }

@@ -21,7 +21,6 @@ import android.widget.ArrayAdapter
 import android.widget.ListView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
@@ -70,21 +69,34 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
         val extraKeys = findViewById<ExtraKeysView>(R.id.extra_keys_view)
         extraKeys.setTerminalView(terminalView)
 
-        currentFontSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 14f, resources.displayMetrics).toInt()
+        // AndroidIDE default: 12dp font size
+        currentFontSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12f, resources.displayMetrics).toInt()
 
+        // Toggle keyboard button
+        findViewById<TextView>(R.id.toggle_keyboard_button).setOnClickListener {
+            val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+            imm.toggleSoftInput(0, 0)
+        }
+
+        // Session list adapter — matches AndroidIDE style
         sessionAdapter = object : ArrayAdapter<String>(this, R.layout.item_terminal_session) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 val view = convertView ?: layoutInflater.inflate(R.layout.item_terminal_session, parent, false)
                 val session = sessions.getOrNull(position)
-                val nameText = view.findViewById<TextView>(R.id.session_name)
-                val closeBtn = view.findViewById<TextView>(R.id.btn_close_session)
+                val titleText = view.findViewById<TextView>(R.id.session_title)
 
                 if (session != null) {
-                    nameText.text = "Session ${position + 1} — ${session.mSessionName ?: "shell"}"
-                    nameText.setTextColor(if (session == currentSession) Color.parseColor("#FF00FF00") else Color.WHITE)
+                    val num = position + 1
+                    val name = session.mSessionName ?: "shell"
+                    val cwd = session.workingDirectory?.substringAfterLast('/') ?: ""
+                    titleText.text = "[$num] $name\n    $cwd"
 
-                    closeBtn.setOnClickListener {
-                        removeSession(session)
+                    if (session == currentSession) {
+                        titleText.setTextColor(Color.parseColor("#FF4CAF50"))
+                    } else if (session.exitStatus != 0) {
+                        titleText.setTextColor(Color.parseColor("#FFEF5350"))
+                    } else {
+                        titleText.setTextColor(Color.parseColor("#FFDDDDDD"))
                     }
 
                     view.setOnClickListener {
@@ -97,11 +109,13 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
         }
         sessionListView.adapter = sessionAdapter
 
+        // New session button
         findViewById<TextView>(R.id.new_session_button).setOnClickListener {
             createNewSession()
             drawerLayout.closeDrawer(GravityCompat.START)
         }
 
+        // Terminal view client — matches AndroidIDE configuration
         terminalView.setTerminalViewClient(object : TerminalViewClient {
             override fun onScale(scale: Float): Float {
                 if (scale < 0.9f || scale > 1.1f) {
@@ -144,12 +158,29 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
             override fun logStackTrace(tag: String, e: Exception?) {}
         })
 
+        // Start foreground service
+        TerminalService.start(this)
+
+        // Create first session and print welcome text
         createNewSession()
 
+        // Print initial welcome banner (like AndroidIDE shows before setup)
         val selectedResourcesJson = intent.getStringExtra("selected_resources")
 
         scope.launch {
-            delay(500)
+            delay(300)
+            // Print welcome banner
+            writeToTerminal("\r\n")
+            writeToTerminal("\u001B[1;36m╔══════════════════════════════════════╗\u001B[0m\r\n")
+            writeToTerminal("\u001B[1;36m║         CODE-IDE Setup               ║\u001B[0m\r\n")
+            writeToTerminal("\u001B[1;36m╚══════════════════════════════════════╝\u001B[0m\r\n")
+            writeToTerminal("\r\n")
+            writeToTerminal("\u001B[33mWelcome to CODE-IDE!\u001B[0m\r\n")
+            writeToTerminal("\u001B[37mSetting up your development environment...\u001B[0m\r\n")
+            writeToTerminal("\r\n")
+
+            delay(200)
+
             if (selectedResourcesJson != null) {
                 runSetupWithSelection(selectedResourcesJson)
             } else {
@@ -161,7 +192,9 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
     private fun createNewSession(): TerminalSession {
         sessionCounter++
         val shell = getShellPath()
-        val cwd = filesDir.absolutePath
+        val homeDir = File(filesDir, "home")
+        if (!homeDir.exists()) homeDir.mkdirs()
+        val cwd = homeDir.absolutePath
         val session = TerminalSession(shell, cwd, arrayOf(shell), null, null, this)
         session.mSessionName = "session_$sessionCounter"
         sessions.add(session)
@@ -222,15 +255,11 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
     private fun runSetupWithSelection(jsonStr: String) {
         val resourcesArray = JSONArray(jsonStr)
         if (resourcesArray.length() == 0) {
-            writeToTerminal("\r\n\u001B[33mNo resources selected.\u001B[0m\r\n")
+            writeToTerminal("\u001B[33mNo resources selected.\u001B[0m\r\n")
             finishSetup()
             return
         }
 
-        writeToTerminal("\r\n")
-        writeToTerminal("\u001B[1;36m\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u001B[0m\r\n")
-        writeToTerminal("\u001B[1;36m         CODE-IDE Setup               \u001B[0m\r\n")
-        writeToTerminal("\u001B[1;36m\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u001B[0m\r\n\r\n")
         writeToTerminal("\u001B[1mInstalling ${resourcesArray.length()} selected resources:\u001B[0m\r\n")
 
         for (i in 0 until resourcesArray.length()) {
@@ -282,7 +311,7 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
                         writeToTerminal("\u001B[33m  ${resource.name}: $pct%\u001B[0m\r")
                     },
                     onResourceComplete = { resource ->
-                        writeToTerminal("  \u001B[32m\u2713\u001B[0m Downloaded ${resource.name}\r\n")
+                        writeToTerminal("  \u001B[32m✓\u001B[0m Downloaded ${resource.name}\r\n")
                     },
                     onError = { error ->
                         writeToTerminal("\u001B[31mERROR: $error\u001B[0m\r\n")
@@ -303,10 +332,10 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
                     val result = resourceManager.extractResource(resource, object : ResourceManager.ExtractionListener {
                         override fun onExtractionStart(fileName: String) {}
                         override fun onExtractionComplete(destDir: File) {
-                            writeToTerminal("  \u001B[32m\u2713\u001B[0m Extracted to ${destDir.name}\r\n")
+                            writeToTerminal("  \u001B[32m✓\u001B[0m Extracted to ${destDir.name}\r\n")
                         }
                         override fun onExtractionError(error: String) {
-                            writeToTerminal("  \u001B[31m\u2717\u001B[0m $error\r\n")
+                            writeToTerminal("  \u001B[31m✗\u001B[0m $error\r\n")
                         }
                     })
                     if (result.isFailure) {
@@ -321,10 +350,6 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
     }
 
     private fun runSetupLegacy() {
-        writeToTerminal("\r\n")
-        writeToTerminal("\u001B[1;36m\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u001B[0m\r\n")
-        writeToTerminal("\u001B[1;36m         CODE-IDE Setup               \u001B[0m\r\n")
-        writeToTerminal("\u001B[1;36m\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u001B[0m\r\n\r\n")
         writeToTerminal("\u001B[1mFetching resource manifest...\u001B[0m\r\n")
 
         scope.launch {
@@ -364,7 +389,7 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
                         writeToTerminal("\u001B[33m  ${resource.name}: $pct%\u001B[0m\r")
                     },
                     onResourceComplete = { resource ->
-                        writeToTerminal("  \u001B[32m\u2713\u001B[0m Downloaded ${resource.name}\r\n")
+                        writeToTerminal("  \u001B[32m✓\u001B[0m Downloaded ${resource.name}\r\n")
                     },
                     onError = { error ->
                         writeToTerminal("\u001B[31mERROR: $error\u001B[0m\r\n")
@@ -385,10 +410,10 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
                     val result = resourceManager.extractResource(resource, object : ResourceManager.ExtractionListener {
                         override fun onExtractionStart(fileName: String) {}
                         override fun onExtractionComplete(destDir: File) {
-                            writeToTerminal("  \u001B[32m\u2713\u001B[0m Extracted to ${destDir.name}\r\n")
+                            writeToTerminal("  \u001B[32m✓\u001B[0m Extracted to ${destDir.name}\r\n")
                         }
                         override fun onExtractionError(error: String) {
-                            writeToTerminal("  \u001B[31m\u2717\u001B[0m $error\r\n")
+                            writeToTerminal("  \u001B[31m✗\u001B[0m $error\r\n")
                         }
                     })
                     if (result.isFailure) {
@@ -409,7 +434,7 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
         SetupState.setSetupComplete(this, true)
         handler.postDelayed({
             TerminalService.stop(this)
-            startActivity(Intent(this, com.neo.ide.activities.HomeActivity::class.java))
+            startActivity(Intent(this, HomeActivity::class.java))
             finish()
         }, 1500)
     }

@@ -5,19 +5,20 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="true"
+    android:background="@android:color/black">
 
     <androidx.drawerlayout.widget.DrawerLayout
         android:id="@+id/drawer_layout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:layout_marginHorizontal="3dp">
 
         <!-- Main terminal content -->
         <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginHorizontal="3dp">
+            android:layout_height="match_parent">
 
             <com.termux.view.TerminalView
                 android:id="@+id/terminal_view"
@@ -39,38 +40,24 @@
             android:layout_height="match_parent"
             android:layout_gravity="start"
             android:orientation="vertical"
-            android:background="#FF111111">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Terminal Sessions"
-                android:textColor="#FF888888"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:fontFamily="monospace"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="10dp"
-                android:background="#FF0A0A0A" />
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="#FF222222" />
+            android:background="#FF1A1A1A"
+            android:descendantFocusability="blocksDescendants">
 
             <ListView
                 android:id="@+id/terminal_sessions_list"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
-                android:divider="#FF222222"
-                android:dividerHeight="1dp"
-                android:choiceMode="singleChoice" />
+                android:divider="@android:color/transparent"
+                android:dividerHeight="0dp"
+                android:choiceMode="singleChoice"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp" />
 
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="#FF222222" />
+                android:background="#FF333333" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -79,34 +66,50 @@
                 android:padding="8dp">
 
                 <TextView
+                    android:id="@+id/toggle_keyboard_button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="KEYBOARD"
+                    android:textColor="#FFAAAAAA"
+                    android:textSize="11sp"
+                    android:textAllCaps="true"
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center"
+                    android:paddingVertical="10dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <TextView
                     android:id="@+id/new_session_button"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="+ New Session"
-                    android:textColor="#FF00FF00"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:fontFamily="monospace"
+                    android:text="NEW SESSION"
+                    android:textColor="#FFAAAAAA"
+                    android:textSize="11sp"
+                    android:textAllCaps="true"
+                    android:fontFamily="sans-serif-medium"
                     android:gravity="center"
-                    android:paddingVertical="8dp"
+                    android:paddingVertical="10dp"
                     android:background="?attr/selectableItemBackground"
                     android:clickable="true"
                     android:focusable="true" />
 
             </LinearLayout>
-
         </LinearLayout>
 
     </androidx.drawerlayout.widget.DrawerLayout>
 
+    <!-- Extra keys bar -->
     <com.neo.ide.setup.ExtraKeysView
         android:id="@+id/extra_keys_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#FF000000"
+        android:background="@android:color/black"
         android:paddingHorizontal="2dp"
         android:paddingTop="2dp"
-        android:paddingBottom="4dp" />
+        android:paddingBottom="2dp" />
 
 </LinearLayout>

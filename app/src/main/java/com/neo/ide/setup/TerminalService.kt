@@ -18,7 +18,7 @@ import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.neo.ide.R
-import com.neo.ide.activities.MainActivity
+import com.neo.ide.activities.HomeActivity
 
 class TerminalService : Service() {
 
@@ -74,7 +74,7 @@ class TerminalService : Service() {
     }
 
     private fun buildNotification(text: String): Notification {
-        val launchIntent = Intent(this, MainActivity::class.java).apply {
+        val launchIntent = Intent(this, HomeActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val pendingIntent = PendingIntent.getActivity(

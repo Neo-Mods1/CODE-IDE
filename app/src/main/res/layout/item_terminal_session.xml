@@ -2,58 +2,27 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:paddingHorizontal="12dp"
-    android:paddingVertical="10dp"
+    android:paddingStart="12dp"
+    android:paddingEnd="8dp"
+    android:paddingVertical="8dp"
     android:background="?attr/selectableItemBackground"
     android:clickable="true"
     android:focusable="true">
 
     <TextView
-        android:id="@+id/session_icon"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
-        android:gravity="center"
-        android:text=">"
-        android:textColor="#FF00FF00"
-        android:textSize="14sp"
-        android:fontFamily="monospace"
-        android:textStyle="bold"
-        android:background="#FF1A1A1A" />
-
-    <LinearLayout
+        android:id="@+id/session_title"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:orientation="vertical"
-        android:layout_marginStart="10dp">
-
-        <TextView
-            android:id="@+id/session_name"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Session 1"
-            android:textColor="#FFFFFFFF"
-            android:textSize="13sp"
-            android:fontFamily="monospace"
-            android:maxLines="1"
-            android:ellipsize="end" />
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/btn_close_session"
-        android:layout_width="28dp"
-        android:layout_height="28dp"
-        android:gravity="center"
-        android:text="x"
-        android:textColor="#FF888888"
+        android:text="[1] shell"
+        android:textColor="#FFDDDDDD"
         android:textSize="14sp"
         android:fontFamily="monospace"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:clickable="true"
-        android:focusable="true"
-        android:layout_marginStart="4dp" />
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:lineSpacingExtra="2dp" />
 
 </LinearLayout>

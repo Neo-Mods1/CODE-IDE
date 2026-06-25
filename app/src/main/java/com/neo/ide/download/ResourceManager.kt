@@ -63,11 +63,11 @@ class ResourceManager(private val context: Context) {
     }
 
     fun getInstallDir(): File {
-        return context.filesDir
+        return File(context.filesDir, "home")
     }
 
     fun getCacheDir(): File {
-        val cacheDir = File(context.filesDir, ".cache")
+        val cacheDir = File(getInstallDir(), ".cache")
         if (!cacheDir.exists()) cacheDir.mkdirs()
         return cacheDir
     }

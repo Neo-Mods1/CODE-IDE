@@ -12,10 +12,12 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.util.AttributeSet
 import android.util.TypedValue
+import android.view.Gravity
 import android.view.KeyEvent
-import android.view.View
+import android.view.MotionEvent
 import android.widget.GridLayout
 import android.widget.TextView
+import com.google.android.material.button.MaterialButton
 import com.termux.view.TerminalView
 
 class ExtraKeysView @JvmOverloads constructor(
@@ -27,7 +29,9 @@ class ExtraKeysView @JvmOverloads constructor(
     private var terminalView: TerminalView? = null
     private var ctrlActive = false
     private var altActive = false
+    private var shiftActive = false
 
+    // AndroidIDE default layout: 2 rows x 7 columns
     private val keys = arrayOf(
         arrayOf("ESC", "/", "-", "HOME", "UP", "END", "PGUP"),
         arrayOf("TAB", "CTRL", "ALT", "LEFT", "DOWN", "RIGHT", "PGDN")
@@ -37,7 +41,7 @@ class ExtraKeysView @JvmOverloads constructor(
         rowCount = 2
         columnCount = 7
         setBackgroundColor(Color.BLACK)
-        setPadding(0, 2, 0, 2)
+        setPadding(2, 2, 2, 4)
         buildKeys()
     }
 
@@ -46,34 +50,40 @@ class ExtraKeysView @JvmOverloads constructor(
     }
 
     private fun buildKeys() {
+        removeAllViews()
         for ((row, rowKeys) in keys.withIndex()) {
             for ((col, key) in rowKeys.withIndex()) {
-                val btn = TextView(context).apply {
+                val btn = MaterialButton(context, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
                     text = getDisplayText(key)
                     setTextColor(Color.WHITE)
-                    setTypeface(Typeface.MONOSPACE, Typeface.BOLD)
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
-                    setPadding(8, 6, 8, 6)
-                    gravity = android.view.Gravity.CENTER
-                    isClickable = true
-                    isFocusable = true
+                    setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL), Typeface.NORMAL)
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+                    insetTop = 0
+                    insetBottom = 0
+                    minimumHeight = 0
+                    minimumWidth = 0
+                    gravity = Gravity.CENTER
+                    isAllCaps = false
 
                     val bg = android.graphics.drawable.GradientDrawable().apply {
-                        setColor(Color.parseColor("#1AFFFFFF"))
+                        setColor(Color.parseColor("#22FFFFFF"))
                         setStroke(1, Color.parseColor("#33FFFFFF"))
                         cornerRadius = 4f
                     }
                     background = bg
+                    stateListAnimator = null
 
                     setOnClickListener { onKeyPress(key) }
                     setOnTouchListener { v, event ->
-                        if (event.action == android.view.MotionEvent.ACTION_DOWN) {
-                            (v.background as? android.graphics.drawable.GradientDrawable)
-                                ?.setColor(Color.parseColor("#33FFFFFF"))
-                        } else if (event.action == android.view.MotionEvent.ACTION_UP ||
-                            event.action == android.view.MotionEvent.ACTION_CANCEL) {
-                            (v.background as? android.graphics.drawable.GradientDrawable)
-                                ?.setColor(Color.parseColor("#1AFFFFFF"))
+                        when (event.action) {
+                            MotionEvent.ACTION_DOWN -> {
+                                (v.background as? android.graphics.drawable.GradientDrawable)
+                                    ?.setColor(Color.parseColor("#44FFFFFF"))
+                            }
+                            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                                (v.background as? android.graphics.drawable.GradientDrawable)
+                                    ?.setColor(Color.parseColor("#22FFFFFF"))
+                            }
                         }
                         false
                     }
@@ -92,19 +102,23 @@ class ExtraKeysView @JvmOverloads constructor(
     }
 
     private fun getDisplayText(key: String): String {
+        if (ctrlActive && key == "CTRL") return "CTRL ON"
+        if (altActive && key == "ALT") return "ALT ON"
         return when (key) {
             "ESC" -> "ESC"
-            "TAB" -> "TAB"
-            "CTRL" -> if (ctrlActive) "⎈" else "CTRL"
-            "ALT" -> if (altActive) "⎇" else "ALT"
-            "HOME" -> "⇱"
-            "END" -> "⇲"
-            "PGUP" -> "⇑"
-            "PGDN" -> "⇓"
+            "TAB" -> "⇥ TAB"
+            "CTRL" -> "CTRL"
+            "ALT" -> "ALT"
+            "HOME" -> "↖"
+            "END" -> "↘"
+            "PGUP" -> "⇈"
+            "PGDN" -> "⇊"
             "UP" -> "↑"
             "DOWN" -> "↓"
             "LEFT" -> "←"
             "RIGHT" -> "→"
+            "-" -> "–"
+            "/" -> "/"
             else -> key
         }
     }
@@ -116,12 +130,12 @@ class ExtraKeysView @JvmOverloads constructor(
         when (key) {
             "CTRL" -> {
                 ctrlActive = !ctrlActive
-                updateKeyAppearance()
+                updateModifierAppearance()
                 return
             }
             "ALT" -> {
                 altActive = !altActive
-                updateKeyAppearance()
+                updateModifierAppearance()
                 return
             }
             "ESC" -> sendKey(view, KeyEvent.KEYCODE_ESCAPE)
@@ -136,51 +150,39 @@ class ExtraKeysView @JvmOverloads constructor(
             "RIGHT" -> sendKey(view, KeyEvent.KEYCODE_DPAD_RIGHT)
             "-" -> {
                 val codePoint = '-'.code
-                if (ctrlActive) {
-                    session.writeCodePoint(true, codePoint)
-                    ctrlActive = false
-                } else if (altActive) {
-                    session.writeCodePoint(true, codePoint)
-                    altActive = false
-                } else {
-                    session.write(byteArrayOf('-'.code.toByte()), 0, 1)
-                }
-                updateKeyAppearance()
+                session.writeCodePoint(ctrlActive || altActive, codePoint)
             }
             "/" -> session.write(byteArrayOf('/'.code.toByte()), 0, 1)
         }
 
-        if (key != "CTRL" && key != "ALT") {
-            if (ctrlActive) {
-                ctrlActive = false
-                updateKeyAppearance()
-            }
-            if (altActive) {
-                altActive = false
-                updateKeyAppearance()
-            }
-        }
+        // Auto-reset modifiers after key press
+        if (ctrlActive) { ctrlActive = false; updateModifierAppearance() }
+        if (altActive) { altActive = false; updateModifierAppearance() }
     }
 
     private fun sendKey(view: TerminalView, keyCode: Int) {
         val downTime = android.os.SystemClock.uptimeMillis()
-        val event = KeyEvent(downTime, downTime, KeyEvent.ACTION_DOWN, keyCode, 0,
-            if (ctrlActive) KeyEvent.META_CTRL_ON else 0)
+        var metaState = 0
+        if (ctrlActive) metaState = metaState or KeyEvent.META_CTRL_ON
+        if (altActive) metaState = metaState or KeyEvent.META_ALT_ON
+        val event = KeyEvent(downTime, downTime, KeyEvent.ACTION_DOWN, keyCode, 0, metaState)
         view.onKeyDown(keyCode, event)
     }
 
-    private fun updateKeyAppearance() {
+    private fun updateModifierAppearance() {
         for (i in 0 until childCount) {
-            val child = getChildAt(i) as? TextView ?: continue
+            val child = getChildAt(i) as? MaterialButton ?: continue
             val key = getKeyForIndex(i) ?: continue
             when (key) {
                 "CTRL" -> {
-                    child.setTextColor(if (ctrlActive) Color.parseColor("#FF0000") else Color.WHITE)
-                    child.text = if (ctrlActive) "⎈" else "CTRL"
+                    child.text = if (ctrlActive) "CTRL ON" else "CTRL"
+                    val bg = child.background as? android.graphics.drawable.GradientDrawable
+                    bg?.setColor(if (ctrlActive) Color.parseColor("#66FF0000") else Color.parseColor("#22FFFFFF"))
                 }
                 "ALT" -> {
-                    child.setTextColor(if (altActive) Color.parseColor("#FF0000") else Color.WHITE)
-                    child.text = if (altActive) "⎇" else "ALT"
+                    child.text = if (altActive) "ALT ON" else "ALT"
+                    val bg = child.background as? android.graphics.drawable.GradientDrawable
+                    bg?.setColor(if (altActive) Color.parseColor("#66FF0000") else Color.parseColor("#22FFFFFF"))
                 }
             }
         }

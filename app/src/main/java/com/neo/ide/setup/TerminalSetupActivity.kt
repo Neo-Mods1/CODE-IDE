@@ -33,7 +33,6 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
 
     private var terminalSession: TerminalSession? = null
     private val pendingOutput = mutableListOf<String>()
-    private var emulatorReady = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,7 +59,6 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
             override fun readFnKey(): Boolean = false
             override fun onCodePoint(codePoint: Int, ctrlDown: Boolean, session: TerminalSession?): Boolean = false
             override fun onEmulatorSet() {
-                emulatorReady = true
                 flushPendingOutput()
             }
             override fun logError(tag: String, message: String) {}
@@ -76,6 +74,7 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
         val cwd = filesDir.absolutePath
         terminalSession = TerminalSession(shell, cwd, arrayOf(shell), null, null, this)
         terminalSession?.mSessionName = "setup"
+        terminalView.setTextSize(10)
         terminalView.attachSession(terminalSession)
 
         val selectedResourcesJson = intent.getStringExtra("selected_resources")
@@ -92,15 +91,17 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
 
     private fun flushPendingOutput() {
         if (pendingOutput.isEmpty()) return
+        val session = terminalSession ?: return
         for (text in pendingOutput) {
-            terminalSession?.writeToTerminal(text)
+            session.writeToTerminal(text)
         }
         pendingOutput.clear()
     }
 
     private fun writeToTerminal(text: String) {
-        if (emulatorReady) {
-            terminalSession?.writeToTerminal(text)
+        val session = terminalSession
+        if (session != null && session.emulator != null) {
+            session.writeToTerminal(text)
         } else {
             pendingOutput.add(text)
         }

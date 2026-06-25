@@ -12,6 +12,7 @@ plugins {
 android {
     namespace = "com.termux.emulator"
     compileSdk = v.getProperty("compileSdk").toInt()
+    ndkVersion = v.getProperty("ndkVersion")
 
     defaultConfig {
         minSdk = v.getProperty("minSdk").toInt()

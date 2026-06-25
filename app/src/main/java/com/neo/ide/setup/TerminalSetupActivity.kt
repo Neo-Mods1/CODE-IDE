@@ -3,7 +3,6 @@ package com.neo.ide.setup
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.widget.ProgressBar
@@ -21,6 +20,7 @@ import com.termux.view.TerminalViewClient
 import kotlinx.coroutines.*
 import org.json.JSONArray
 import java.io.File
+import android.view.KeyEvent
 
 class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
 
@@ -32,6 +32,8 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
     private val resourceManager by lazy { ResourceManager(this) }
 
     private var terminalSession: TerminalSession? = null
+    private val pendingOutput = mutableListOf<String>()
+    private var emulatorReady = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,7 +59,10 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
             override fun readShiftKey(): Boolean = false
             override fun readFnKey(): Boolean = false
             override fun onCodePoint(codePoint: Int, ctrlDown: Boolean, session: TerminalSession?): Boolean = false
-            override fun onEmulatorSet() {}
+            override fun onEmulatorSet() {
+                emulatorReady = true
+                flushPendingOutput()
+            }
             override fun logError(tag: String, message: String) {}
             override fun logWarn(tag: String, message: String) {}
             override fun logInfo(tag: String, message: String) {}
@@ -76,7 +81,7 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
         val selectedResourcesJson = intent.getStringExtra("selected_resources")
 
         scope.launch {
-            delay(500)
+            delay(300)
             if (selectedResourcesJson != null) {
                 runSetupWithSelection(selectedResourcesJson)
             } else {
@@ -85,13 +90,25 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
         }
     }
 
-    private fun getShellPath(): String {
-        val shells = listOf("/data/data/com.termux/files/usr/bin/bash", "/system/bin/sh")
-        return shells.firstOrNull { File(it).exists() } ?: "/system/bin/sh"
+    private fun flushPendingOutput() {
+        if (pendingOutput.isEmpty()) return
+        for (text in pendingOutput) {
+            terminalSession?.writeToTerminal(text)
+        }
+        pendingOutput.clear()
     }
 
     private fun writeToTerminal(text: String) {
-        terminalSession?.write(text)
+        if (emulatorReady) {
+            terminalSession?.writeToTerminal(text)
+        } else {
+            pendingOutput.add(text)
+        }
+    }
+
+    private fun getShellPath(): String {
+        val shells = listOf("/data/data/com.termux/files/usr/bin/bash", "/system/bin/sh")
+        return shells.firstOrNull { File(it).exists() } ?: "/system/bin/sh"
     }
 
     private fun runSetupWithSelection(jsonStr: String) {

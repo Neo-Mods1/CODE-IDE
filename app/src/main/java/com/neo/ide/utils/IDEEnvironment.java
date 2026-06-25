@@ -42,7 +42,7 @@ public final class IDEEnvironment {
         ROOT = context.getFilesDir();
         PREFIX = mkdirIfNotExists(new File(ROOT, "usr"));
         HOME = mkdirIfNotExists(new File(ROOT, "home"));
-        ANDROIDIDE_HOME = mkdirIfNotExists(new File(HOME, ".androidide"));
+        ANDROIDIDE_HOME = mkdirIfNotExists(new File(HOME, ".codeide"));
         TMP_DIR = mkdirIfNotExists(new File(PREFIX, "tmp"));
         BIN_DIR = mkdirIfNotExists(new File(PREFIX, "bin"));
         LIB_DIR = mkdirIfNotExists(new File(PREFIX, "lib"));

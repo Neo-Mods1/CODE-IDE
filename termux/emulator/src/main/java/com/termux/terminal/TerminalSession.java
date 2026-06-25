@@ -227,6 +227,17 @@ public final class TerminalSession extends TerminalOutput {
         return mEmulator;
     }
 
+    /**
+     * Write text directly to the terminal emulator display, bypassing the shell process.
+     * This is useful for displaying setup output or status text before the shell is ready.
+     */
+    public void writeToTerminal(String text) {
+        if (text == null || mEmulator == null) return;
+        byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
+        mEmulator.append(bytes, bytes.length);
+        notifyScreenUpdate();
+    }
+
     /** Notify the {@link #mClient} that the screen has changed. */
     protected void notifyScreenUpdate() {
         mClient.onTextChanged(this);

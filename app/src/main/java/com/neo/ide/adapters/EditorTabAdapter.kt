@@ -137,23 +137,23 @@ class EditorTabAdapter(
 
         private fun getFileIconRes(fileType: FileType): Int {
             return when (fileType) {
-                FileType.KOTLIN -> android.R.drawable.ic_menu_edit
-                FileType.JAVA -> android.R.drawable.ic_menu_edit
-                FileType.XML -> android.R.drawable.ic_menu_edit
-                FileType.GRADLE -> android.R.drawable.ic_menu_save
-                FileType.KTS -> android.R.drawable.ic_menu_save
-                FileType.JSON -> android.R.drawable.ic_menu_info_details
-                FileType.MARKDOWN -> android.R.drawable.ic_menu_info_details
-                FileType.PROPERTIES -> android.R.drawable.ic_menu_info_details
+                FileType.KOTLIN -> R.drawable.ic_kotlin
+                FileType.JAVA -> R.drawable.ic_java
+                FileType.XML -> R.drawable.ic_code
+                FileType.GRADLE -> R.drawable.ic_gradle
+                FileType.KTS -> R.drawable.ic_gradle_kts
+                FileType.JSON -> R.drawable.ic_code
+                FileType.MARKDOWN -> R.drawable.ic_text
+                FileType.PROPERTIES -> R.drawable.ic_text
                 FileType.PNG, FileType.JPG, FileType.JPEG, FileType.GIF, FileType.WEBP, FileType.SVG -> {
-                    android.R.drawable.ic_menu_gallery
+                    R.drawable.ic_image
                 }
-                FileType.TXT -> android.R.drawable.ic_menu_edit
-                FileType.SH -> android.R.drawable.ic_menu_edit
-                FileType.PYTHON -> android.R.drawable.ic_menu_edit
-                FileType.CPP, FileType.C, FileType.H -> android.R.drawable.ic_menu_edit
-                FileType.FOLDER -> android.R.drawable.ic_menu_agenda
-                FileType.FILE -> android.R.drawable.ic_menu_save
+                FileType.TXT -> R.drawable.ic_text
+                FileType.SH -> R.drawable.ic_shell
+                FileType.PYTHON -> R.drawable.ic_python
+                FileType.CPP, FileType.C, FileType.H -> R.drawable.ic_cpp
+                FileType.FOLDER -> R.drawable.ic_folder
+                FileType.FILE -> R.drawable.ic_file
             }
         }
     }

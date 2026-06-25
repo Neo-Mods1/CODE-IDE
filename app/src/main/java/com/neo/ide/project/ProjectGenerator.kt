@@ -385,7 +385,7 @@ class $className : ComponentActivity() {
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
     Text(
-        text = "Hello $name!",
+        text = "Hello \$name!",
         modifier = modifier
     )
 }

@@ -13,13 +13,12 @@ import com.tonyodev.fetch2.Download
 import com.tonyodev.fetch2.Error
 import com.tonyodev.fetch2.Fetch
 import com.tonyodev.fetch2.FetchConfiguration
-import com.tonyodev.fetch2.FetchListener
+import com.tonyodev.fetch2.AbstractFetchListener
 import com.tonyodev.fetch2.NetworkType
 import com.tonyodev.fetch2.Priority
 import com.tonyodev.fetch2.Request
 import com.tonyodev.fetch2.Status
 import com.tonyodev.fetch2.exception.FetchException
-import com.tonyodev.fetch2core.DownloadBlock
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -72,7 +71,7 @@ class ResumableDownloader(private val context: Context) {
         val deferred = CompletableDeferred<Result<File>>()
         var fetchId = -1
 
-        val fetchListener = object : FetchListener {
+        val fetchListener = object : AbstractFetchListener() {
             override fun onQueued(download: Download, waitingOnNetwork: Boolean) {
                 fetchId = download.id
             }
@@ -107,7 +106,7 @@ class ResumableDownloader(private val context: Context) {
                 deferred.complete(Result.success(file))
             }
 
-            override fun onError(download: Download, error: Error, throwable: Throwable?) {
+            override fun onError(download: Download, error: com.tonyodev.fetch2.Error, throwable: Throwable?) {
                 fetch.removeListener(this)
                 val msg = throwable?.message ?: error.throwable?.message ?: "Download failed"
                 Log.e(TAG, "Fetch download error: $msg")
@@ -121,13 +120,6 @@ class ResumableDownloader(private val context: Context) {
                 listener?.onError(error)
                 deferred.complete(Result.failure(IOException(error)))
             }
-
-            override fun onRemoved(download: Download) {}
-            override fun onDeleted(download: Download) {}
-            override fun onPaused(download: Download) {}
-            override fun onResumed(download: Download) {}
-            override fun onWaitingNetwork(download: Download) {}
-            override fun onDownloadBlockUpdated(download: Download, downloadBlock: DownloadBlock, totalBlocks: Int) {}
         }
 
         fetch.addListener(fetchListener)

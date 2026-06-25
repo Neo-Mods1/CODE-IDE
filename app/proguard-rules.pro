@@ -17,3 +17,9 @@
 -keepclassmembers class kotlinx.coroutines.** {
     volatile <fields>;
 }
+
+# Fetch2
+-keep class com.tonyodev.fetch2.** { *; }
+-keep class com.tonyodev.fetch2core.** { *; }
+-dontwarn com.tonyodev.fetch2.**
+-dontwarn com.tonyodev.fetch2core.**

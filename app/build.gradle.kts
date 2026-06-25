@@ -100,6 +100,7 @@ dependencies {
     implementation("androidx.transition:transition:${v.getProperty("transitionVersion")}")
     implementation("com.airbnb.android:lottie:${v.getProperty("lottieVersion")}")
     implementation("com.squareup.okhttp3:okhttp:${v.getProperty("okhttpVersion")}")
+    implementation("com.github.tonyofrancis.Fetch:fetch2:${v.getProperty("fetchVersion")}")
     implementation("org.json:json:20231013")
     implementation(project(":termux:view"))
 }

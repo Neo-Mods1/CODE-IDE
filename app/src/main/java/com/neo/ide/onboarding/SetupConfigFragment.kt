@@ -153,7 +153,7 @@ class SetupConfigFragment : Fragment() {
         val grouped = manifest.resources.groupBy { it.category }
         val inflater = LayoutInflater.from(requireContext())
 
-        val categoryOrder = listOf("cmdline_tools", "platform_tools", "build_tools", "platforms", "ndk", "gradle")
+        val categoryOrder = listOf("licenses", "cmdline_tools", "platform_tools", "build_tools", "platforms", "ndk", "gradle")
 
         for (category in categoryOrder) {
             val resources = grouped[category] ?: continue

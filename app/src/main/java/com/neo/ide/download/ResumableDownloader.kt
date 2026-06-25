@@ -107,12 +107,12 @@ class ResumableDownloader(private val context: Context) {
                 deferred.complete(Result.success(file))
             }
 
-            override fun onError(download: Download) {
+            override fun onError(download: Download, error: Error, throwable: Throwable?) {
                 fetch.removeListener(this)
-                val error = download.error?.throwable?.message ?: "Download failed"
-                Log.e(TAG, "Fetch download error: $error")
-                listener?.onError(error)
-                deferred.complete(Result.failure(IOException(error)))
+                val msg = throwable?.message ?: error.throwable?.message ?: "Download failed"
+                Log.e(TAG, "Fetch download error: $msg")
+                listener?.onError(msg)
+                deferred.complete(Result.failure(IOException(msg)))
             }
 
             override fun onCancelled(download: Download) {
@@ -127,7 +127,7 @@ class ResumableDownloader(private val context: Context) {
             override fun onPaused(download: Download) {}
             override fun onResumed(download: Download) {}
             override fun onWaitingNetwork(download: Download) {}
-            override fun onDownloadBlockUpdated(download: Download, downloadBlock: DownloadBlock, currentBytes: Long, totalBytes: Long) {}
+            override fun onDownloadBlockUpdated(download: Download, downloadBlock: DownloadBlock, totalBlocks: Int) {}
         }
 
         fetch.addListener(fetchListener)

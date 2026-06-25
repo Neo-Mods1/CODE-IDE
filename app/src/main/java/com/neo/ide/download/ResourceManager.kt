@@ -76,14 +76,14 @@ class ResourceManager(private val context: Context) {
                 val obj = resourcesArray.getJSONObject(i)
                 resources.add(
                     ResourceEntry(
-                        name = obj.getString("name"),
+                        name = obj.optString("name", obj.optString("label", "unknown")),
                         category = obj.optString("category", "unknown"),
-                        version = obj.getString("version"),
-                        size = obj.getLong("size"),
-                        sha256 = obj.getString("sha256"),
-                        format = obj.getString("format"),
-                        url = obj.getString("url"),
-                        destination = obj.getString("destination")
+                        version = obj.optString("version", ""),
+                        size = obj.optLong("size", 0),
+                        sha256 = obj.optString("sha256", ""),
+                        format = obj.optString("format", "tar.xz"),
+                        url = obj.optString("url", ""),
+                        destination = obj.optString("destination", "{install_dir}/${obj.optString("name", "unknown")}")
                     )
                 )
             }

@@ -1,15 +1,10 @@
-/**
- *	(っ◔◡◔)っ ♥
- *
- *	Telegram Contact • @NeoModsDev
- *	Telegram Channel • https://t.me/NeoModsChannel
- */
-
 package com.neo.ide.setup
 
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.View
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -23,13 +18,11 @@ import com.termux.terminal.TerminalSession
 import com.termux.terminal.TerminalSessionClient
 import com.termux.view.TerminalView
 import com.termux.view.TerminalViewClient
-import android.view.KeyEvent
-import android.view.MotionEvent
 import kotlinx.coroutines.*
 import org.json.JSONArray
 import java.io.File
 
-class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient, TerminalViewClient {
+class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
 
     private lateinit var terminalView: TerminalView
     private lateinit var statusText: TextView
@@ -48,11 +41,35 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient, Termin
         statusText = findViewById(R.id.setup_status_text)
         progressBar = findViewById(R.id.setup_progress)
 
-        terminalView.setTerminalViewClient(this)
+        terminalView.setTerminalViewClient(object : TerminalViewClient {
+            override fun onScale(scale: Float): Float = 1.0f
+            override fun onSingleTapUp(e: MotionEvent) {}
+            override fun shouldBackButtonBeMappedToEscape(): Boolean = false
+            override fun shouldEnforceCharBasedInput(): Boolean = false
+            override fun shouldUseCtrlSpaceWorkaround(): Boolean = false
+            override fun isTerminalViewSelected(): Boolean = true
+            override fun copyModeChanged(copyMode: Boolean) {}
+            override fun onKeyDown(keyCode: Int, e: KeyEvent, session: TerminalSession?): Boolean = false
+            override fun onKeyUp(keyCode: Int, e: KeyEvent): Boolean = false
+            override fun onLongPress(event: MotionEvent): Boolean = false
+            override fun readControlKey(): Boolean = false
+            override fun readAltKey(): Boolean = false
+            override fun readShiftKey(): Boolean = false
+            override fun readFnKey(): Boolean = false
+            override fun onCodePoint(codePoint: Int, ctrlDown: Boolean, session: TerminalSession?): Boolean = false
+            override fun onEmulatorSet() {}
+            override fun logError(tag: String, message: String) {}
+            override fun logWarn(tag: String, message: String) {}
+            override fun logInfo(tag: String, message: String) {}
+            override fun logDebug(tag: String, message: String) {}
+            override fun logVerbose(tag: String, message: String) {}
+            override fun logStackTraceWithMessage(tag: String, message: String, e: Exception?) {}
+            override fun logStackTrace(tag: String, e: Exception?) {}
+        })
 
         val shell = getShellPath()
         val cwd = filesDir.absolutePath
-        terminalSession = TerminalSession(shell, cwd, arrayOf(shell), null, this)
+        terminalSession = TerminalSession(shell, cwd, arrayOf(shell), null, null, this)
         terminalSession?.mSessionName = "setup"
         terminalView.attachSession(terminalSession)
 
@@ -74,7 +91,7 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient, Termin
     }
 
     private fun writeToTerminal(text: String) {
-        terminalSession?.write(text, 0, text.length)
+        terminalSession?.write(text)
     }
 
     private fun runSetupWithSelection(jsonStr: String) {
@@ -86,9 +103,9 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient, Termin
         }
 
         writeToTerminal("\r\n")
-        writeToTerminal("\u001B[1;36m╔══════════════════════════════════════╗\u001B[0m\r\n")
-        writeToTerminal("\u001B[1;36m║         CODE-IDE Setup               ║\u001B[0m\r\n")
-        writeToTerminal("\u001B[1;36m╚══════════════════════════════════════╝\u001B[0m\r\n\r\n")
+        writeToTerminal("\u001B[1;36m\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u001B[0m\r\n")
+        writeToTerminal("\u001B[1;36m         CODE-IDE Setup               \u001B[0m\r\n")
+        writeToTerminal("\u001B[1;36m\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u001B[0m\r\n\r\n")
         writeToTerminal("\u001B[1mInstalling ${resourcesArray.length()} selected resources:\u001B[0m\r\n")
 
         for (i in 0 until resourcesArray.length()) {
@@ -130,59 +147,65 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient, Termin
 
         handler.post { progressBar.visibility = View.VISIBLE }
 
-        val success = resourceManager.downloadResources(
-            toInstall,
-            onResourceStart = { resource, current, total ->
-                writeToTerminal("\u001B[1m[$current/$total]\u001B[0m Downloading ${resource.name}...\r\n")
-            },
-            onResourceProgress = { resource, progress ->
-                val pct = (progress * 100).toInt()
-                handler.post {
-                    statusText.text = "Downloading ${resource.name}... $pct%"
-                }
-            },
-            onResourceComplete = { resource ->
-                writeToTerminal("  \u001B[32m✓\u001B[0m Downloaded ${resource.name}\r\n")
-            },
-            onError = { error ->
-                writeToTerminal("\u001B[31mERROR: $error\u001B[0m\r\n")
+        scope.launch {
+            val success = withContext(Dispatchers.IO) {
+                resourceManager.downloadResources(
+                    toInstall,
+                    onResourceStart = { resource, current, total ->
+                        writeToTerminal("\u001B[1m[$current/$total]\u001B[0m Downloading ${resource.name}...\r\n")
+                    },
+                    onResourceProgress = { resource, progress ->
+                        val pct = (progress * 100).toInt()
+                        handler.post {
+                            statusText.text = "Downloading ${resource.name}... $pct%"
+                        }
+                    },
+                    onResourceComplete = { resource ->
+                        writeToTerminal("  \u001B[32m\u2713\u001B[0m Downloaded ${resource.name}\r\n")
+                    },
+                    onError = { error ->
+                        writeToTerminal("\u001B[31mERROR: $error\u001B[0m\r\n")
+                    }
+                )
             }
-        )
 
-        if (!success) {
-            writeToTerminal("\r\n\u001B[31mDownload failed. Check your connection and try again.\u001B[0m\r\n")
-            updateStatus("Failed")
-            handler.post { progressBar.visibility = View.GONE }
-            return
-        }
-
-        writeToTerminal("\r\n\u001B[1mDownloads complete. Extracting...\u001B[0m\r\n\r\n")
-
-        for (resource in toInstall) {
-            writeToTerminal("Extracting ${resource.name}...\r\n")
-            val result = resourceManager.extractResource(resource, object : ResourceManager.ExtractionListener {
-                override fun onExtractionStart(fileName: String) {}
-                override fun onExtractionComplete(destDir: File) {
-                    writeToTerminal("  \u001B[32m✓\u001B[0m Extracted to ${destDir.name}\r\n")
-                }
-                override fun onExtractionError(error: String) {
-                    writeToTerminal("  \u001B[31m✗\u001B[0m $error\r\n")
-                }
-            })
-            if (result.isFailure) {
-                writeToTerminal("  \u001B[31mFailed to extract ${resource.name}: ${result.exceptionOrNull()?.message}\u001B[0m\r\n")
+            if (!success) {
+                writeToTerminal("\r\n\u001B[31mDownload failed. Check your connection and try again.\u001B[0m\r\n")
+                updateStatus("Failed")
+                handler.post { progressBar.visibility = View.GONE }
+                return@launch
             }
-        }
 
-        writeToTerminal("\r\n\u001B[1;32mSetup complete!\u001B[0m\r\n")
-        finishSetup()
+            writeToTerminal("\r\n\u001B[1mDownloads complete. Extracting...\u001B[0m\r\n\r\n")
+
+            withContext(Dispatchers.IO) {
+                for (resource in toInstall) {
+                    writeToTerminal("Extracting ${resource.name}...\r\n")
+                    val result = resourceManager.extractResource(resource, object : ResourceManager.ExtractionListener {
+                        override fun onExtractionStart(fileName: String) {}
+                        override fun onExtractionComplete(destDir: File) {
+                            writeToTerminal("  \u001B[32m\u2713\u001B[0m Extracted to ${destDir.name}\r\n")
+                        }
+                        override fun onExtractionError(error: String) {
+                            writeToTerminal("  \u001B[31m\u2717\u001B[0m $error\r\n")
+                        }
+                    })
+                    if (result.isFailure) {
+                        writeToTerminal("  \u001B[31mFailed to extract ${resource.name}: ${result.exceptionOrNull()?.message}\u001B[0m\r\n")
+                    }
+                }
+            }
+
+            writeToTerminal("\r\n\u001B[1;32mSetup complete!\u001B[0m\r\n")
+            finishSetup()
+        }
     }
 
     private fun runSetupLegacy() {
         writeToTerminal("\r\n")
-        writeToTerminal("\u001B[1;36m╔══════════════════════════════════════╗\u001B[0m\r\n")
-        writeToTerminal("\u001B[1;36m║         CODE-IDE Setup               ║\u001B[0m\r\n")
-        writeToTerminal("\u001B[1;36m╚══════════════════════════════════════╝\u001B[0m\r\n\r\n")
+        writeToTerminal("\u001B[1;36m\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u001B[0m\r\n")
+        writeToTerminal("\u001B[1;36m         CODE-IDE Setup               \u001B[0m\r\n")
+        writeToTerminal("\u001B[1;36m\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u001B[0m\r\n\r\n")
         writeToTerminal("\u001B[1mFetching resource manifest...\u001B[0m\r\n")
 
         scope.launch {
@@ -215,24 +238,26 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient, Termin
 
             handler.post { progressBar.visibility = View.VISIBLE }
 
-            val success = resourceManager.downloadResources(
-                requiredResources,
-                onResourceStart = { resource, current, total ->
-                    writeToTerminal("\u001B[1m[$current/$total]\u001B[0m Downloading ${resource.name}...\r\n")
-                },
-                onResourceProgress = { resource, progress ->
-                    val pct = (progress * 100).toInt()
-                    handler.post {
-                        statusText.text = "Downloading ${resource.name}... $pct%"
+            val success = withContext(Dispatchers.IO) {
+                resourceManager.downloadResources(
+                    requiredResources,
+                    onResourceStart = { resource, current, total ->
+                        writeToTerminal("\u001B[1m[$current/$total]\u001B[0m Downloading ${resource.name}...\r\n")
+                    },
+                    onResourceProgress = { resource, progress ->
+                        val pct = (progress * 100).toInt()
+                        handler.post {
+                            statusText.text = "Downloading ${resource.name}... $pct%"
+                        }
+                    },
+                    onResourceComplete = { resource ->
+                        writeToTerminal("  \u001B[32m\u2713\u001B[0m Downloaded ${resource.name}\r\n")
+                    },
+                    onError = { error ->
+                        writeToTerminal("\u001B[31mERROR: $error\u001B[0m\r\n")
                     }
-                },
-                onResourceComplete = { resource ->
-                    writeToTerminal("  \u001B[32m✓\u001B[0m Downloaded ${resource.name}\r\n")
-                },
-                onError = { error ->
-                    writeToTerminal("\u001B[31mERROR: $error\u001B[0m\r\n")
-                }
-            )
+                )
+            }
 
             if (!success) {
                 writeToTerminal("\r\n\u001B[31mDownload failed. Please check your connection and try again.\u001B[0m\r\n")
@@ -243,19 +268,21 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient, Termin
 
             writeToTerminal("\r\n\u001B[1mAll downloads complete. Extracting...\u001B[0m\r\n")
 
-            for (resource in requiredResources) {
-                writeToTerminal("Extracting ${resource.name}...\r\n")
-                val result = resourceManager.extractResource(resource, object : ResourceManager.ExtractionListener {
-                    override fun onExtractionStart(fileName: String) {}
-                    override fun onExtractionComplete(destDir: File) {
-                        writeToTerminal("  \u001B[32m✓\u001B[0m Extracted to ${destDir.name}\r\n")
+            withContext(Dispatchers.IO) {
+                for (resource in requiredResources) {
+                    writeToTerminal("Extracting ${resource.name}...\r\n")
+                    val result = resourceManager.extractResource(resource, object : ResourceManager.ExtractionListener {
+                        override fun onExtractionStart(fileName: String) {}
+                        override fun onExtractionComplete(destDir: File) {
+                            writeToTerminal("  \u001B[32m\u2713\u001B[0m Extracted to ${destDir.name}\r\n")
+                        }
+                        override fun onExtractionError(error: String) {
+                            writeToTerminal("  \u001B[31m\u2717\u001B[0m $error\r\n")
+                        }
+                    })
+                    if (result.isFailure) {
+                        writeToTerminal("  \u001B[31mFailed to extract ${resource.name}: ${result.exceptionOrNull()?.message}\u001B[0m\r\n")
                     }
-                    override fun onExtractionError(error: String) {
-                        writeToTerminal("  \u001B[31m✗\u001B[0m $error\r\n")
-                    }
-                })
-                if (result.isFailure) {
-                    writeToTerminal("  \u001B[31mFailed to extract ${resource.name}: ${result.exceptionOrNull()?.message}\u001B[0m\r\n")
                 }
             }
 
@@ -286,8 +313,6 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient, Termin
         terminalSession?.finishIfRunning()
     }
 
-    // --- TerminalSessionClient ---
-
     override fun onTextChanged(changedSession: TerminalSession) {
         if (changedSession === terminalSession) {
             handler.post { terminalView.onScreenUpdated() }
@@ -295,69 +320,14 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient, Termin
     }
 
     override fun onTitleChanged(changedSession: TerminalSession) {}
-
     override fun onSessionFinished(finishedSession: TerminalSession) {}
-
     override fun onCopyTextToClipboard(session: TerminalSession, text: String) {}
-
     override fun onPasteTextFromClipboard(session: TerminalSession?) {}
-
     override fun onBell(session: TerminalSession) {}
-
-    override fun onColorsChanged(changedSession: TerminalSession) {
-        handler.post {
-            terminalView.setBackgroundColor(changedSession.mEmulator.defaultBackgroundColor)
-        }
-    }
-
+    override fun onColorsChanged(changedSession: TerminalSession) {}
     override fun onTerminalCursorStateChange(state: Boolean) {}
-
     override fun setTerminalShellPid(session: TerminalSession, pid: Int) {}
-
     override fun getTerminalCursorStyle(): Int? = null
-
-    override fun logError(tag: String, message: String) {}
-    override fun logWarn(tag: String, message: String) {}
-    override fun logInfo(tag: String, message: String) {}
-    override fun logDebug(tag: String, message: String) {}
-    override fun logVerbose(tag: String, message: String) {}
-    override fun logStackTraceWithMessage(tag: String, message: String, e: Exception?) {}
-    override fun logStackTrace(tag: String, e: Exception?) {}
-
-    // --- TerminalViewClient ---
-
-    override fun onScale(scale: Float): Float = 1.0f
-
-    override fun onSingleTapUp(e: MotionEvent) {}
-
-    override fun shouldBackButtonBeMappedToEscape(): Boolean = false
-
-    override fun shouldEnforceCharBasedInput(): Boolean = false
-
-    override fun shouldUseCtrlSpaceWorkaround(): Boolean = false
-
-    override fun isTerminalViewSelected(): Boolean = true
-
-    override fun copyModeChanged(copyMode: Boolean) {}
-
-    override fun onKeyDown(keyCode: Int, e: KeyEvent, session: TerminalSession?): Boolean = false
-
-    override fun onKeyUp(keyCode: Int, e: KeyEvent): Boolean = false
-
-    override fun onLongPress(event: MotionEvent): Boolean = false
-
-    override fun readControlKey(): Boolean = false
-
-    override fun readAltKey(): Boolean = false
-
-    override fun readShiftKey(): Boolean = false
-
-    override fun readFnKey(): Boolean = false
-
-    override fun onCodePoint(codePoint: Int, ctrlDown: Boolean, session: TerminalSession?): Boolean = false
-
-    override fun onEmulatorSet() {}
-
     override fun logError(tag: String, message: String) {}
     override fun logWarn(tag: String, message: String) {}
     override fun logInfo(tag: String, message: String) {}

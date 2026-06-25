@@ -8,9 +8,11 @@ import kotlinx.coroutines.withContext
 import okhttp3.ConnectionPool
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
-import java.io.RandomAccessFile
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.coroutineContext
@@ -22,8 +24,18 @@ class ResumableDownloader(private val context: Context) {
         private const val MAX_RETRIES = 3
         private const val CONNECT_TIMEOUT = 30L
         private const val READ_TIMEOUT = 120L
-        private const val CHUNK_SIZE = 65536
-        private const val STATE_SAVE_INTERVAL = 3276800L
+
+        // 4MB read buffer — big chunks = fewer syscalls = fast throughput
+        private const val CHUNK_SIZE = 4 * 1024 * 1024
+
+        // 8MB write buffer — absorbs bursts, reduces disk stalls
+        private const val WRITE_BUFFER_SIZE = 8 * 1024 * 1024
+
+        // Save state every 32MB — not every 3MB, reduces mid-loop disk writes
+        private const val STATE_SAVE_INTERVAL = 32 * 1024 * 1024L
+
+        // Throttle progress callbacks to every 250ms — UI overhead was killing throughput
+        private const val PROGRESS_INTERVAL_MS = 250L
     }
 
     private val client = OkHttpClient.Builder()
@@ -146,27 +158,41 @@ class ResumableDownloader(private val context: Context) {
             bytesDownloaded = 0L
         }
 
-        val raf = RandomAccessFile(destFile, "rw")
-        raf.seek(bytesDownloaded)
+        val fos = FileOutputStream(destFile, bytesDownloaded > 0)
+        val bufferedOut = BufferedOutputStream(fos, WRITE_BUFFER_SIZE)
+        val bufferedIn = BufferedInputStream(body.byteStream(), CHUNK_SIZE)
 
-        body.byteStream().use { input ->
+        var lastStateSave = bytesDownloaded
+        var lastProgressTime = System.currentTimeMillis()
+
+        try {
             val buffer = ByteArray(CHUNK_SIZE)
             var bytesRead: Int
-            while (input.read(buffer).also { bytesRead = it } != -1) {
+            while (bufferedIn.read(buffer).also { bytesRead = it } != -1) {
                 coroutineContext.ensureActive()
-                raf.write(buffer, 0, bytesRead)
+                bufferedOut.write(buffer, 0, bytesRead)
                 bytesDownloaded += bytesRead
 
-                listener?.onProgress(
-                    DownloadState(url, destFile.absolutePath, bytesDownloaded, totalBytes)
-                )
+                val now = System.currentTimeMillis()
+                if (now - lastProgressTime >= PROGRESS_INTERVAL_MS) {
+                    lastProgressTime = now
+                    listener?.onProgress(
+                        DownloadState(url, destFile.absolutePath, bytesDownloaded, totalBytes)
+                    )
+                }
 
-                if (bytesDownloaded % STATE_SAVE_INTERVAL < CHUNK_SIZE) {
+                if (bytesDownloaded - lastStateSave >= STATE_SAVE_INTERVAL) {
+                    bufferedOut.flush()
                     saveState(DownloadState(url, destFile.absolutePath, bytesDownloaded, totalBytes))
+                    lastStateSave = bytesDownloaded
                 }
             }
+
+            bufferedOut.flush()
+        } finally {
+            bufferedIn.close()
+            bufferedOut.close()
         }
-        raf.close()
 
         saveState(DownloadState(url, destFile.absolutePath, bytesDownloaded, totalBytes, isComplete = true))
 
@@ -186,8 +212,8 @@ class ResumableDownloader(private val context: Context) {
 
     fun computeSha256(file: File): String {
         val digest = MessageDigest.getInstance("SHA-256")
-        file.inputStream().use { input ->
-            val buffer = ByteArray(65536)
+        BufferedInputStream(file.inputStream(), CHUNK_SIZE).use { input ->
+            val buffer = ByteArray(CHUNK_SIZE)
             var bytesRead: Int
             while (input.read(buffer).also { bytesRead = it } != -1) {
                 digest.update(buffer, 0, bytesRead)

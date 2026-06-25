@@ -1,3 +1,10 @@
+/**
+ *	(っ◔◡◔)っ ♥
+ *
+ *	Telegram Contact • @NeoModsDev
+ *	Telegram Channel • https://t.me/NeoModsChannel
+ */
+
 package com.neo.ide.setup
 
 import android.graphics.Color
@@ -113,7 +120,7 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
             override fun copyModeChanged(copyMode: Boolean) {}
             override fun onKeyDown(keyCode: Int, e: KeyEvent, session: TerminalSession?): Boolean = false
             override fun onKeyUp(keyCode: Int, e: KeyEvent): Boolean = false
-            override fun onLongPress(event: MotionEvent) {}
+            override fun onLongPress(event: MotionEvent): Boolean = false
             override fun readControlKey(): Boolean = false
             override fun readAltKey(): Boolean = false
             override fun readShiftKey(): Boolean = false

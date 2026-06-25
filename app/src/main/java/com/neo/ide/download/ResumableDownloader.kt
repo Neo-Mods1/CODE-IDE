@@ -1,10 +1,3 @@
-/**
- *	(っ◔◡◔)っ ♥
- *
- *	Telegram Contact • @NeoModsDev
- *	Telegram Channel • https://t.me/NeoModsChannel
- */
-
 package com.neo.ide.download
 
 import android.content.Context
@@ -12,6 +5,7 @@ import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import okhttp3.ConnectionPool
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
@@ -27,15 +21,18 @@ class ResumableDownloader(private val context: Context) {
         private const val TAG = "ResumableDownloader"
         private const val MAX_RETRIES = 3
         private const val CONNECT_TIMEOUT = 30L
-        private const val READ_TIMEOUT = 60L
-        private const val CHUNK_SIZE = 8192
+        private const val READ_TIMEOUT = 120L
+        private const val CHUNK_SIZE = 65536
+        private const val STATE_SAVE_INTERVAL = 3276800L
     }
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
         .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
+        .writeTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
         .followRedirects(true)
         .followSslRedirects(true)
+        .connectionPool(ConnectionPool(5, 2, TimeUnit.MINUTES))
         .build()
 
     data class DownloadState(
@@ -61,8 +58,10 @@ class ResumableDownloader(private val context: Context) {
     }
 
     private fun saveState(state: DownloadState) {
-        val stateFile = getStateFile(state.destination)
-        stateFile.writeText("${state.url}\n${state.bytesDownloaded}\n${state.totalBytes}")
+        try {
+            val stateFile = getStateFile(state.destination)
+            stateFile.writeText("${state.url}\n${state.bytesDownloaded}\n${state.totalBytes}")
+        } catch (_: Exception) {}
     }
 
     private fun loadState(destination: String): DownloadState? {
@@ -70,6 +69,7 @@ class ResumableDownloader(private val context: Context) {
         if (!stateFile.exists()) return null
         return try {
             val lines = stateFile.readLines()
+            if (lines.size < 3) return null
             DownloadState(
                 url = lines[0],
                 destination = destination,
@@ -82,7 +82,7 @@ class ResumableDownloader(private val context: Context) {
     }
 
     private fun clearState(destination: String) {
-        getStateFile(destination).delete()
+        try { getStateFile(destination).delete() } catch (_: Exception) {}
     }
 
     suspend fun download(
@@ -161,7 +161,7 @@ class ResumableDownloader(private val context: Context) {
                     DownloadState(url, destFile.absolutePath, bytesDownloaded, totalBytes)
                 )
 
-                if (bytesDownloaded % (CHUNK_SIZE * 50) == 0L) {
+                if (bytesDownloaded % STATE_SAVE_INTERVAL < CHUNK_SIZE) {
                     saveState(DownloadState(url, destFile.absolutePath, bytesDownloaded, totalBytes))
                 }
             }
@@ -187,7 +187,7 @@ class ResumableDownloader(private val context: Context) {
     fun computeSha256(file: File): String {
         val digest = MessageDigest.getInstance("SHA-256")
         file.inputStream().use { input ->
-            val buffer = ByteArray(8192)
+            val buffer = ByteArray(65536)
             var bytesRead: Int
             while (input.read(buffer).also { bytesRead = it } != -1) {
                 digest.update(buffer, 0, bytesRead)

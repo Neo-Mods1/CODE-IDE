@@ -1,5 +1,9 @@
 import java.util.Properties
 
+val v = Properties().apply {
+    load(rootProject.file("versions.properties").inputStream())
+}
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -13,14 +17,14 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.neo.ide"
-    compileSdk = 36
+    compileSdk = v.getProperty("compileSdk").toInt()
 
     defaultConfig {
         applicationId = "com.neo.ide"
-        minSdk = 30
-        targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        minSdk = v.getProperty("minSdk").toInt()
+        targetSdk = v.getProperty("targetSdk").toInt()
+        versionCode = v.getProperty("appVersionCode").toInt()
+        versionName = v.getProperty("appVersionName")
 
         vectorDrawables {
             useSupportLibrary = true
@@ -76,26 +80,26 @@ android {
 }
 
 dependencies {
-    implementation("com.google.code.findbugs:jsr305:3.0.2")
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("com.google.android.material:material:1.11.0")
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
-    implementation("androidx.coordinatorlayout:coordinatorlayout:1.2.0")
-    implementation("androidx.drawerlayout:drawerlayout:1.2.0")
-    implementation("androidx.recyclerview:recyclerview:1.3.2")
-    implementation("androidx.viewpager2:viewpager2:1.0.0")
-    implementation("androidx.fragment:fragment-ktx:1.6.2")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
-    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.7.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
-    implementation("androidx.annotation:annotation:1.7.1")
-    implementation("androidx.dynamicanimation:dynamicanimation:1.0.0-alpha03")
-    implementation("androidx.activity:activity-ktx:1.8.2")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    implementation("androidx.transition:transition:1.4.1")
-    implementation("com.airbnb.android:lottie:6.3.0")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.google.code.findbugs:jsr305:${v.getProperty("jsr305Version")}")
+    implementation("androidx.core:core-ktx:${v.getProperty("coreKtxVersion")}")
+    implementation("androidx.appcompat:appcompat:${v.getProperty("appcompatVersion")}")
+    implementation("com.google.android.material:material:${v.getProperty("materialVersion")}")
+    implementation("androidx.constraintlayout:constraintlayout:${v.getProperty("constraintLayoutVersion")}")
+    implementation("androidx.coordinatorlayout:coordinatorlayout:${v.getProperty("coordinatorLayoutVersion")}")
+    implementation("androidx.drawerlayout:drawerlayout:${v.getProperty("drawerLayoutVersion")}")
+    implementation("androidx.recyclerview:recyclerview:${v.getProperty("recyclerviewVersion")}")
+    implementation("androidx.viewpager2:viewpager2:${v.getProperty("viewpager2Version")}")
+    implementation("androidx.fragment:fragment-ktx:${v.getProperty("fragmentKtxVersion")}")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:${v.getProperty("lifecycleVersion")}")
+    implementation("androidx.lifecycle:lifecycle-livedata-ktx:${v.getProperty("lifecycleVersion")}")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:${v.getProperty("lifecycleVersion")}")
+    implementation("androidx.annotation:annotation:${v.getProperty("annotationVersion")}")
+    implementation("androidx.dynamicanimation:dynamicanimation:${v.getProperty("dynamicAnimationVersion")}")
+    implementation("androidx.activity:activity-ktx:${v.getProperty("activityKtxVersion")}")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:${v.getProperty("coroutinesVersion")}")
+    implementation("androidx.transition:transition:${v.getProperty("transitionVersion")}")
+    implementation("com.airbnb.android:lottie:${v.getProperty("lottieVersion")}")
+    implementation("com.squareup.okhttp3:okhttp:${v.getProperty("okhttpVersion")}")
     implementation("org.json:json:20231013")
     implementation(project(":termux:application"))
 }

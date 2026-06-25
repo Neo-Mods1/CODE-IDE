@@ -1,3 +1,9 @@
+import java.util.Properties
+
+val v = Properties().apply {
+    load(rootProject.file("versions.properties").inputStream())
+}
+
 plugins {
     id("com.android.library")
     id("kotlin-android")
@@ -5,10 +11,10 @@ plugins {
 
 android {
     namespace = "com.termux.emulator"
-    compileSdk = 36
+    compileSdk = v.getProperty("compileSdk").toInt()
 
     defaultConfig {
-        minSdk = 30
+        minSdk = v.getProperty("minSdk").toInt()
 
         externalNativeBuild {
             ndkBuild {
@@ -30,5 +36,5 @@ android {
 }
 
 dependencies {
-    implementation("androidx.annotation:annotation:1.7.1")
+    implementation("androidx.annotation:annotation:${v.getProperty("annotationVersion")}")
 }

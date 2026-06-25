@@ -1,3 +1,9 @@
+import java.util.Properties
+
+val v = Properties().apply {
+    load(rootProject.file("versions.properties").inputStream())
+}
+
 plugins {
     id("com.android.library")
     id("kotlin-android")
@@ -5,10 +11,10 @@ plugins {
 
 android {
     namespace = "com.termux"
-    compileSdk = 36
+    compileSdk = v.getProperty("compileSdk").toInt()
 
     defaultConfig {
-        minSdk = 30
+        minSdk = v.getProperty("minSdk").toInt()
     }
 
     compileOptions {
@@ -24,10 +30,10 @@ android {
 }
 
 dependencies {
-    implementation("androidx.annotation:annotation:1.7.1")
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.drawerlayout:drawerlayout:1.2.0")
-    implementation("com.google.android.material:material:1.11.0")
+    implementation("androidx.annotation:annotation:${v.getProperty("annotationVersion")}")
+    implementation("androidx.core:core-ktx:${v.getProperty("coreKtxVersion")}")
+    implementation("androidx.drawerlayout:drawerlayout:${v.getProperty("drawerLayoutVersion")}")
+    implementation("com.google.android.material:material:${v.getProperty("materialVersion")}")
     implementation(project(":termux:view"))
     implementation(project(":termux:shared"))
 }

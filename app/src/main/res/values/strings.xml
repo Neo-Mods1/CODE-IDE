@@ -54,7 +54,7 @@
     <string name="permission_title_install_packages">Install packages</string>
     <string name="permission_desc_install_packages">Allow installing APKs built with AndroidIDE.</string>
     <string name="permission_title_notifications">Notifications</string>
-    <string name="permission_desc_notifications">Required for terminal service foreground notification.</string>
+    <string name="permission_desc_notifications">Required for terminal service &amp; gradle foreground notification.</string>
     <string name="onboarding_title_permissions">Permissions</string>
     <string name="onboarding_subtitle_permissions">CODE-IDE requires the following permissions</string>
     <string name="msg_grant_permissions">Please grant the permissions to continue.</string>
@@ -97,6 +97,42 @@
     <string name="home_action_open_project">Open existing project</string>
     <string name="home_action_terminal">Terminal</string>
     <string name="home_action_preferences">Preferences</string>
+
+    <!-- Templates -->
+    <string name="new_project">New project</string>
+    <string name="previous">Previous</string>
+    <string name="create_project">Create project</string>
+    <string name="project_name">Project name</string>
+    <string name="package_name">Package name</string>
+    <string name="save_location">Save location</string>
+    <string name="language">Language</string>
+    <string name="min_sdk">Min SDK</string>
+    <string name="target_sdk">Target SDK</string>
+    <string name="compile_sdk">Compile SDK</string>
+    <string name="use_kts">Use Kotlin Script (.kts)</string>
+    <string name="project_created">Project created successfully</string>
+    <string name="project_creation_failed">Project creation failed</string>
+    <string name="project_already_exists">A project with this name already exists</string>
+    <string name="invalid_project_name">Invalid project name</string>
+    <string name="invalid_package_name">Invalid package name</string>
+
+    <!-- Templates -->
+    <string name="tpl_empty_activity">Empty Activity</string>
+    <string name="tpl_basic_activity">Basic Activity</string>
+    <string name="tpl_nav_drawer">Navigation Drawer</string>
+    <string name="tpl_bottom_nav">Bottom Navigation</string>
+    <string name="tpl_tabbed_activity">Tabbed Activity</string>
+    <string name="tpl_no_activity">No Activity</string>
+    <string name="tpl_empty_activity_kotlin">Empty Activity (Kotlin)</string>
+    <string name="tpl_compose_activity">Compose Activity</string>
+
+    <!-- Open Project -->
+    <string name="open_project">Open Project</string>
+    <string name="open_project_desc">Select a folder containing an Android project</string>
+    <string name="no_project_selected">No project selected</string>
+    <string name="recent_projects">Recent Projects</string>
+    <string name="no_recent_projects">No recent projects</string>
+    <string name="last_opened">Last opened: %s</string>
 
     <!-- Termux -->
     <string name="action_toggle_soft_keyboard">Toggle keyboard</string>

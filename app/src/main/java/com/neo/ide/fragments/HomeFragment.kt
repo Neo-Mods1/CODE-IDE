@@ -12,6 +12,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -19,11 +20,32 @@ import com.neo.ide.R
 import com.neo.ide.activities.MainActivity
 import com.neo.ide.adapters.HomeActionsAdapter
 import com.neo.ide.models.HomeScreenAction
+import com.neo.ide.project.CreateProjectActivity
+import com.neo.ide.project.OpenProjectActivity
+import com.neo.ide.project.RecentProjectsManager
 import com.neo.ide.setup.TerminalSetupActivity
 
 class HomeFragment : Fragment() {
 
     private var actionsList: RecyclerView? = null
+
+    private val createProjectLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val projectPath = result.data?.getStringExtra("project_path")
+        if (projectPath != null) {
+            openProject(projectPath)
+        }
+    }
+
+    private val openProjectLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val projectPath = result.data?.getStringExtra("project_path")
+        if (projectPath != null) {
+            openProject(projectPath)
+        }
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         return inflater.inflate(R.layout.fragment_home, container, false)
@@ -49,10 +71,10 @@ class HomeFragment : Fragment() {
     private fun handleAction(action: HomeScreenAction) {
         when (action.id) {
             HomeScreenAction.ACTION_CREATE_PROJECT -> {
-                startActivity(Intent(requireContext(), MainActivity::class.java))
+                createProjectLauncher.launch(Intent(requireContext(), CreateProjectActivity::class.java))
             }
             HomeScreenAction.ACTION_OPEN_PROJECT -> {
-                startActivity(Intent(requireContext(), MainActivity::class.java))
+                openProjectLauncher.launch(Intent(requireContext(), OpenProjectActivity::class.java))
             }
             HomeScreenAction.ACTION_OPEN_TERMINAL -> {
                 startActivity(Intent(requireContext(), TerminalSetupActivity::class.java))
@@ -61,6 +83,14 @@ class HomeFragment : Fragment() {
                 // TODO: Open preferences
             }
         }
+    }
+
+    private fun openProject(projectPath: String) {
+        RecentProjectsManager.addProject(requireContext(), projectPath)
+        val intent = Intent(requireContext(), MainActivity::class.java).apply {
+            putExtra("project_path", projectPath)
+        }
+        startActivity(intent)
     }
 
     override fun onDestroyView() {

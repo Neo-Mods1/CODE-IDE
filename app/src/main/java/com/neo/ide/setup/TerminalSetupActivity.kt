@@ -88,7 +88,7 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
                 if (session != null) {
                     val num = position + 1
                     val name = session.mSessionName ?: "shell"
-                    val cwd = session.workingDirectory?.substringAfterLast('/') ?: ""
+                    val cwd = session.cwd?.substringAfterLast('/') ?: ""
                     titleText.text = "[$num] $name\n    $cwd"
 
                     if (session == currentSession) {

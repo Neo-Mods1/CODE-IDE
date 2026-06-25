@@ -28,7 +28,7 @@ import androidx.drawerlayout.widget.DrawerLayout
 import com.neo.ide.R
 import com.neo.ide.download.ResourceManager
 import com.neo.ide.download.SetupState
-import com.neo.ide.activities.MainActivity
+import com.neo.ide.activities.HomeActivity
 import android.content.Intent
 import com.termux.terminal.TerminalSession
 import com.termux.terminal.TerminalSessionClient
@@ -409,7 +409,7 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
         SetupState.setSetupComplete(this, true)
         handler.postDelayed({
             TerminalService.stop(this)
-            startActivity(Intent(this, MainActivity::class.java))
+            startActivity(Intent(this, com.neo.ide.activities.HomeActivity::class.java))
             finish()
         }, 1500)
     }

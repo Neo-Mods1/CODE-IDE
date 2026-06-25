@@ -88,6 +88,14 @@
     <string name="close">Close</string>
     <string name="save">Save</string>
 
+    <!-- Home Screen -->
+    <string name="home_welcome_title">Get started</string>
+    <string name="home_welcome_subtitle">Build something amazing today</string>
+    <string name="home_action_create_project">Create new project</string>
+    <string name="home_action_open_project">Open existing project</string>
+    <string name="home_action_terminal">Terminal</string>
+    <string name="home_action_preferences">Preferences</string>
+
     <!-- Termux -->
     <string name="action_toggle_soft_keyboard">Toggle keyboard</string>
     <string name="action_new_session">New session</string>

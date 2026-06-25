@@ -18,5 +18,3 @@ rootProject.name = "CODE-IDE"
 include(":app")
 include(":termux:emulator")
 include(":termux:view")
-include(":termux:shared")
-include(":termux:application")

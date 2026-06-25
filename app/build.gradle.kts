@@ -101,5 +101,5 @@ dependencies {
     implementation("com.airbnb.android:lottie:${v.getProperty("lottieVersion")}")
     implementation("com.squareup.okhttp3:okhttp:${v.getProperty("okhttpVersion")}")
     implementation("org.json:json:20231013")
-    implementation(project(":termux:application"))
+    implementation(project(":termux:view"))
 }

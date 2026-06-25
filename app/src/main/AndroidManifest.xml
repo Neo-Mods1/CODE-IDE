@@ -59,19 +59,6 @@
             android:theme="@style/Theme.CodeIDE.Crash"
             android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize" />
 
-        <!-- Termux -->
-        <activity
-            android:name="com.termux.app.TermuxActivity"
-            android:configChanges="orientation|screenSize|smallestScreenSize|density|screenLayout|keyboard|keyboardHidden|navigation"
-            android:exported="false"
-            android:launchMode="singleTask"
-            android:resizeableActivity="true" />
-
-        <service
-            android:name="com.termux.app.TermuxService"
-            android:exported="false"
-            android:foregroundServiceType="shortService" />
-
     </application>
 
 </manifest>

@@ -104,7 +104,7 @@ class ResumableDownloader(private val context: Context) {
         return@withContext Result.failure(IOException("Max retries exceeded"))
     }
 
-    private fun doDownload(
+    private suspend fun doDownload(
         url: String,
         destFile: File,
         expectedSha256: String?,

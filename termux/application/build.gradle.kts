@@ -5,10 +5,10 @@ plugins {
 
 android {
     namespace = "com.termux"
-    compileSdk = rootProject.ext.compileSdk
+    compileSdk = project.property("compileSdk").toString().toInt()
 
     defaultConfig {
-        minSdk = rootProject.ext.minSdk
+        minSdk = project.property("minSdk").toString().toInt()
     }
 
     compileOptions {
@@ -24,10 +24,10 @@ android {
 }
 
 dependencies {
-    implementation("androidx.annotation:annotation:${rootProject.ext.annotationVersion}")
-    implementation("androidx.core:core-ktx:${rootProject.ext.coreKtxVersion}")
-    implementation("androidx.drawerlayout:drawerlayout:${rootProject.ext.drawerLayoutVersion}")
-    implementation("com.google.android.material:material:${rootProject.ext.materialVersion}")
+    implementation("androidx.annotation:annotation:${project.property("annotationVersion")}")
+    implementation("androidx.core:core-ktx:${project.property("coreKtxVersion")}")
+    implementation("androidx.drawerlayout:drawerlayout:${project.property("drawerLayoutVersion")}")
+    implementation("com.google.android.material:material:${project.property("materialVersion")}")
     implementation(project(":termux:view"))
     implementation(project(":termux:shared"))
 }

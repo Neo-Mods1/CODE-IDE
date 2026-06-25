@@ -5,10 +5,10 @@ plugins {
 
 android {
     namespace = "com.termux.emulator"
-    compileSdk = rootProject.ext.compileSdk
+    compileSdk = project.property("compileSdk").toString().toInt()
 
     defaultConfig {
-        minSdk = rootProject.ext.minSdk
+        minSdk = project.property("minSdk").toString().toInt()
 
         externalNativeBuild {
             ndkBuild {
@@ -30,5 +30,5 @@ android {
 }
 
 dependencies {
-    implementation("androidx.annotation:annotation:${rootProject.ext.annotationVersion}")
+    implementation("androidx.annotation:annotation:${project.property("annotationVersion")}")
 }

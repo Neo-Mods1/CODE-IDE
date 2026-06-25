@@ -14,7 +14,7 @@ class ResourceManager(private val context: Context) {
 
     companion object {
         private const val TAG = "ResourceManager"
-        private const val MANIFEST_URL = "https://raw.githubusercontent.com/Neo-Mods1/CODE-IDE-resources/main/manifest.json"
+        const val MANIFEST_URL = "https://raw.githubusercontent.com/Neo-Mods1/CODE-IDE-resources/main/manifest.json"
         private const val PREFS_NAME = "resource_manager"
         private const val KEY_MANIFEST_VERSION = "manifest_version"
     }

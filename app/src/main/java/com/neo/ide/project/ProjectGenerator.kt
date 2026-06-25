@@ -352,52 +352,51 @@ setContentView(binding.getRoot());""" else """setContentView(R.layout.activity_m
     }
 
     private fun generateComposeActivity(dir: File, className: String) {
-        File(dir, "$className.kt").writeText("""
-package $packageName
-
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-
-class $className : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            MaterialTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    Greeting("Android")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello \$name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    MaterialTheme {
-        Greeting("Android")
-    }
-}
-""".trimIndent())
+        val content = "package $packageName\n" +
+            "\n" +
+            "import android.os.Bundle\n" +
+            "import androidx.activity.ComponentActivity\n" +
+            "import androidx.activity.compose.setContent\n" +
+            "import androidx.compose.foundation.layout.fillMaxSize\n" +
+            "import androidx.compose.material3.MaterialTheme\n" +
+            "import androidx.compose.material3.Surface\n" +
+            "import androidx.compose.material3.Text\n" +
+            "import androidx.compose.runtime.Composable\n" +
+            "import androidx.compose.ui.Modifier\n" +
+            "import androidx.compose.ui.tooling.preview.Preview\n" +
+            "\n" +
+            "class $className : ComponentActivity() {\n" +
+            "    override fun onCreate(savedInstanceState: Bundle?) {\n" +
+            "        super.onCreate(savedInstanceState)\n" +
+            "        setContent {\n" +
+            "            MaterialTheme {\n" +
+            "                Surface(\n" +
+            "                    modifier = Modifier.fillMaxSize(),\n" +
+            "                    color = MaterialTheme.colorScheme.background\n" +
+            "                ) {\n" +
+            "                    Greeting(\"Android\")\n" +
+            "                }\n" +
+            "            }\n" +
+            "        }\n" +
+            "    }\n" +
+            "}\n" +
+            "\n" +
+            "@Composable\n" +
+            "fun Greeting(name: String, modifier: Modifier = Modifier) {\n" +
+            "    Text(\n" +
+            "        text = \"Hello \"+\"\$\"+\"name!\",\n" +
+            "        modifier = modifier\n" +
+            "    )\n" +
+            "}\n" +
+            "\n" +
+            "@Preview(showBackground = true)\n" +
+            "@Composable\n" +
+            "fun GreetingPreview() {\n" +
+            "    MaterialTheme {\n" +
+            "        Greeting(\"Android\")\n" +
+            "    }\n" +
+            "}\n"
+        File(dir, "$className.kt").writeText(content)
     }
 
     private fun generateLayouts() {

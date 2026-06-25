@@ -56,4 +56,8 @@
     <dimen name="status_bar_height">0dp</dimen>
     <dimen name="navigation_bar_height">0dp</dimen>
 
+    <!-- Termux -->
+    <dimen name="content_padding">16dp</dimen>
+    <dimen name="content_padding_half">8dp</dimen>
+
 </resources>

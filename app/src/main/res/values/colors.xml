@@ -72,4 +72,9 @@
     <color name="status_info">#FF1976D2</color>
     <color name="status_success">#FF388E3C</color>
 
+    <!-- Termux / AndroidIDE -->
+    <color name="black">#FF000000</color>
+    <color name="red_400">#FFEF5350</color>
+    <color name="background_markdown_code_block">#FFF5F5F5</color>
+
 </resources>

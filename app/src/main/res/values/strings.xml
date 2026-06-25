@@ -88,4 +88,13 @@
     <string name="close">Close</string>
     <string name="save">Save</string>
 
+    <!-- Termux -->
+    <string name="action_toggle_soft_keyboard">Toggle keyboard</string>
+    <string name="action_new_session">New session</string>
+    <string name="action_share">Share</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_save_to_file">Save to file</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="title_report_text">Report</string>
+
 </resources>

@@ -115,6 +115,14 @@
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
     </style>
 
+    <!-- Toolbar Text Appearances -->
+    <style name="TextAppearance.Widget.BaseToolbar.Title" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:textColor">?attr/colorOnSurface</item>
+    </style>
+    <style name="TextAppearance.Widget.BaseToolbar.Subtitle" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
+    </style>
+
     <!-- Crash Theme -->
     <style name="Theme.CodeIDE.Crash" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:windowBackground">?attr/colorSurface</item>

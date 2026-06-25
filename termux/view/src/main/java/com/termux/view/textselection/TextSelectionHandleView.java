@@ -1,3 +1,10 @@
+/**
+ *	(っ◔◡◔)っ ♥
+ *
+ *	Telegram Contact • @NeoModsDev
+ *	Telegram Channel • https://t.me/NeoModsChannel
+ */
+
 package com.termux.view.textselection;
 
 import android.annotation.SuppressLint;

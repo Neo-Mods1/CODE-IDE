@@ -1,3 +1,10 @@
+/**
+ *	(っ◔◡◔)っ ♥
+ *
+ *	Telegram Contact • @NeoModsDev
+ *	Telegram Channel • https://t.me/NeoModsChannel
+ */
+
 package com.neo.ide.download
 
 import android.content.Context
@@ -49,7 +56,7 @@ class ResourceManager(private val context: Context) {
     }
 
     fun getInstallDir(): File {
-        return File(context.filesDir, "ide_resources")
+        return context.filesDir
     }
 
     suspend fun fetchManifest(): Result<Manifest> = withContext(Dispatchers.IO) {
@@ -83,15 +90,15 @@ class ResourceManager(private val context: Context) {
                         sha256 = obj.optString("sha256", ""),
                         format = obj.optString("format", "tar.xz"),
                         url = obj.optString("url", ""),
-                        destination = obj.optString("destination", "{install_dir}/${obj.optString("name", "unknown")}")
+                        destination = obj.optString("destination", "{install_dir}")
                     )
                 )
             }
 
             Result.success(
                 Manifest(
-                    version = json.getString("version"),
-                    generated = json.getString("generated"),
+                    version = json.optString("version", "1.0"),
+                    generated = json.optString("generated", ""),
                     resources = resources,
                     categories = categories
                 )
@@ -106,6 +113,11 @@ class ResourceManager(private val context: Context) {
         val installDir = getInstallDir()
         val destPath = resource.destination.replace("{install_dir}", installDir.absolutePath)
         val destDir = File(destPath)
+
+        if (resource.name == "licenses" || resource.name.contains("license")) {
+            return File(installDir, "licenses").exists()
+        }
+
         return destDir.exists() && destDir.listFiles()?.isNotEmpty() == true
     }
 
@@ -128,13 +140,12 @@ class ResourceManager(private val context: Context) {
         listener: ResumableDownloader.DownloadListener? = null
     ): Result<File> {
         val installDir = getInstallDir()
-        val destFile = File(installDir, resource.name)
-        destFile.parentFile?.mkdirs()
+        val destFile = File(installDir, resource.name + ".tar.xz")
 
         return downloader.download(
             url = resource.url,
             destination = destFile.absolutePath,
-            expectedSha256 = resource.sha256,
+            expectedSha256 = null,
             listener = listener
         )
     }
@@ -176,20 +187,18 @@ class ResourceManager(private val context: Context) {
 
     fun extractResource(resource: ResourceEntry, listener: ExtractionListener? = null): Result<File> {
         val installDir = getInstallDir()
-        val archiveFile = File(installDir, resource.name)
-        val destPath = resource.destination.replace("{install_dir}", installDir.absolutePath)
-        val destDir = File(destPath)
+        val archiveFile = File(installDir, resource.name + ".tar.xz")
 
         if (!archiveFile.exists()) {
             return Result.failure(Exception("Archive not found: ${archiveFile.absolutePath}"))
         }
 
-        destDir.mkdirs()
+        listener?.onExtractionStart(archiveFile.name)
 
         return try {
             when (resource.format) {
-                "tar.xz" -> extractTarXz(archiveFile, destDir, listener)
-                "zip" -> extractZip(archiveFile, destDir, listener)
+                "tar.xz" -> extractTarXz(archiveFile, installDir, resource, listener)
+                "zip" -> extractZip(archiveFile, installDir, resource, listener)
                 else -> Result.failure(Exception("Unsupported format: ${resource.format}"))
             }
         } catch (e: Exception) {
@@ -197,8 +206,7 @@ class ResourceManager(private val context: Context) {
         }
     }
 
-    private fun extractTarXz(archive: File, destDir: File, listener: ExtractionListener?): Result<File> {
-        listener?.onExtractionStart(archive.name)
+    private fun extractTarXz(archive: File, destDir: File, resource: ResourceEntry, listener: ExtractionListener?): Result<File> {
         val process = ProcessBuilder(
             "tar", "xJf", archive.absolutePath, "-C", destDir.absolutePath
         ).redirectErrorStream(true).start()
@@ -207,16 +215,20 @@ class ResourceManager(private val context: Context) {
         val exitCode = process.waitFor()
 
         if (exitCode != 0) {
-            listener?.onExtractionError("tar extraction failed: $output")
-            return Result.failure(Exception("tar extraction failed: $output"))
+            val error = "tar extraction failed (exit $exitCode): $output"
+            listener?.onExtractionError(error)
+            return Result.failure(Exception(error))
         }
 
-        listener?.onExtractionComplete(destDir)
-        return Result.success(destDir)
+        archive.delete()
+
+        val destPath = resource.destination.replace("{install_dir}", destDir.absolutePath)
+        val destFile = File(destPath)
+        listener?.onExtractionComplete(destFile)
+        return Result.success(destFile)
     }
 
-    private fun extractZip(archive: File, destDir: File, listener: ExtractionListener?): Result<File> {
-        listener?.onExtractionStart(archive.name)
+    private fun extractZip(archive: File, destDir: File, resource: ResourceEntry, listener: ExtractionListener?): Result<File> {
         val process = ProcessBuilder(
             "unzip", "-o", archive.absolutePath, "-d", destDir.absolutePath
         ).redirectErrorStream(true).start()
@@ -225,12 +237,17 @@ class ResourceManager(private val context: Context) {
         val exitCode = process.waitFor()
 
         if (exitCode != 0) {
-            listener?.onExtractionError("unzip failed: $output")
-            return Result.failure(Exception("unzip failed: $output"))
+            val error = "unzip failed (exit $exitCode): $output"
+            listener?.onExtractionError(error)
+            return Result.failure(Exception(error))
         }
 
-        listener?.onExtractionComplete(destDir)
-        return Result.success(destDir)
+        archive.delete()
+
+        val destPath = resource.destination.replace("{install_dir}", destDir.absolutePath)
+        val destFile = File(destPath)
+        listener?.onExtractionComplete(destFile)
+        return Result.success(destFile)
     }
 
     interface ExtractionListener {

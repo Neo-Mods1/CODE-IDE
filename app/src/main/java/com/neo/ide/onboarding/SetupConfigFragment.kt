@@ -1,3 +1,10 @@
+/**
+ *	(っ◔◡◔)っ ♥
+ *
+ *	Telegram Contact • @NeoModsDev
+ *	Telegram Channel • https://t.me/NeoModsChannel
+ */
+
 package com.neo.ide.onboarding
 
 import android.net.ConnectivityManager
@@ -169,43 +176,29 @@ class SetupConfigFragment : Fragment() {
             val categoryLabel = manifest.categories[category] ?: category
             nameText.text = categoryLabel
 
-            // Calculate total size for this category
-            val totalSize = resources.sumOf { it.size }
-            sizeText.text = formatSize(totalSize)
+            // Start with first resource selected
+            val firstRes = resources[0]
+            sizeText.text = formatSize(firstRes.size)
 
-            if (resources.size == 1) {
-                // Single resource - just select it
-                val res = resources[0]
-                checkbox.isChecked = true
-                selectedResources[category] = SelectedResource(
-                    category = res.category,
-                    name = res.name,
-                    version = res.version,
-                    url = res.url,
-                    size = res.size,
-                    sha256 = res.sha256,
-                    format = res.format,
-                    destination = res.destination
-                )
-            } else {
+            checkbox.isChecked = true
+            selectedResources[category] = SelectedResource(
+                category = firstRes.category,
+                name = firstRes.name,
+                version = firstRes.version,
+                url = firstRes.url,
+                size = firstRes.size,
+                sha256 = firstRes.sha256,
+                format = firstRes.format,
+                destination = firstRes.destination
+            )
+
+            if (resources.size > 1) {
                 // Multiple versions - show dropdown
                 versionContainer.visibility = View.VISIBLE
                 val versions = resources.map { it.version }.toTypedArray()
                 val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, versions)
                 versionDropdown.setAdapter(adapter)
                 versionDropdown.setText(versions[0], false)
-
-                val firstRes = resources[0]
-                selectedResources[category] = SelectedResource(
-                    category = firstRes.category,
-                    name = firstRes.name,
-                    version = firstRes.version,
-                    url = firstRes.url,
-                    size = firstRes.size,
-                    sha256 = firstRes.sha256,
-                    format = firstRes.format,
-                    destination = firstRes.destination
-                )
 
                 versionDropdown.setOnItemClickListener { _, _, position, _ ->
                     val selected = resources[position]
@@ -219,7 +212,6 @@ class SetupConfigFragment : Fragment() {
                         format = selected.format,
                         destination = selected.destination
                     )
-                    // Update size display
                     sizeText.text = formatSize(selected.size)
                 }
             }

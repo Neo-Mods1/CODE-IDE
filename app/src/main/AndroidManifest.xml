@@ -59,6 +59,27 @@
             android:theme="@style/Theme.CodeIDE.Crash"
             android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize" />
 
+        <provider
+            android:authorities="com.neo.ide.documents"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:name=".provider.IDEDocumentsProvider"
+            android:permission="android.permission.MANAGE_DOCUMENTS">
+            <intent-filter>
+                <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+            </intent-filter>
+        </provider>
+
+        <provider
+            android:authorities="${applicationId}.providers.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true"
+            android:name=".provider.IDEFileProvider">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/ide_file_provider_paths" />
+        </provider>
+        
     </application>
 
 </manifest>

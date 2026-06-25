@@ -1,3 +1,10 @@
+/**
+ *	(っ◔◡◔)っ ♥
+ *
+ *	Telegram Contact • @NeoModsDev
+ *	Telegram Channel • https://t.me/NeoModsChannel
+ */
+
 package com.neo.ide.fragments
 
 import android.os.Bundle

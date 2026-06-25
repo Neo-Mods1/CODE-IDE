@@ -1,3 +1,10 @@
+/**
+ *	(っ◔◡◔)っ ♥
+ *
+ *	Telegram Contact • @NeoModsDev
+ *	Telegram Channel • https://t.me/NeoModsChannel
+ */
+
 package com.neo.ide.download
 
 import android.content.Context
@@ -163,7 +170,7 @@ class ResumableDownloader(private val context: Context) {
 
         saveState(DownloadState(url, destFile.absolutePath, bytesDownloaded, totalBytes, isComplete = true))
 
-        if (expectedSha256 != null) {
+        if (!expectedSha256.isNullOrEmpty()) {
             val actualSha256 = computeSha256(destFile)
             if (!actualSha256.equals(expectedSha256, ignoreCase = true)) {
                 destFile.delete()

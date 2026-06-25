@@ -1,43 +1,65 @@
+/**
+ *	(っ◔◡◔)っ ♥
+ *
+ *	Telegram Contact • @NeoModsDev
+ *	Telegram Channel • https://t.me/NeoModsChannel
+ */
+
 package com.neo.ide.setup
 
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.widget.ScrollView
+import android.view.View
+import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.neo.ide.R
 import com.neo.ide.download.ResourceManager
-import com.neo.ide.download.ResumableDownloader
 import com.neo.ide.download.SetupState
 import com.neo.ide.activities.MainActivity
 import android.content.Intent
+import com.termux.terminal.TerminalSession
+import com.termux.terminal.TerminalSessionClient
+import com.termux.view.TerminalView
+import com.termux.view.TerminalViewClient
+import android.view.KeyEvent
+import android.view.MotionEvent
 import kotlinx.coroutines.*
 import org.json.JSONArray
+import java.io.File
 
-class TerminalSetupActivity : AppCompatActivity() {
+class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient, TerminalViewClient {
 
-    private lateinit var terminalOutput: TextView
-    private lateinit var scrollView: ScrollView
+    private lateinit var terminalView: TerminalView
     private lateinit var statusText: TextView
+    private lateinit var progressBar: ProgressBar
     private val handler = Handler(Looper.getMainLooper())
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private val resourceManager by lazy { ResourceManager(this) }
+
+    private var terminalSession: TerminalSession? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_terminal_setup)
 
-        terminalOutput = findViewById(R.id.terminal_output)
-        scrollView = findViewById(R.id.terminal_scroll)
+        terminalView = findViewById(R.id.terminal_view)
         statusText = findViewById(R.id.setup_status_text)
+        progressBar = findViewById(R.id.setup_progress)
+
+        terminalView.setTerminalViewClient(this)
+
+        val shell = getShellPath()
+        val cwd = filesDir.absolutePath
+        terminalSession = TerminalSession(shell, cwd, arrayOf(shell), null, this)
+        terminalSession?.mSessionName = "setup"
+        terminalView.attachSession(terminalSession)
 
         val selectedResourcesJson = intent.getStringExtra("selected_resources")
 
-        appendOutput("CODE-IDE Setup")
-        appendOutput("==============\n\n")
-
         scope.launch {
+            delay(500)
             if (selectedResourcesJson != null) {
                 runSetupWithSelection(selectedResourcesJson)
             } else {
@@ -46,26 +68,39 @@ class TerminalSetupActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun runSetupWithSelection(jsonStr: String) {
+    private fun getShellPath(): String {
+        val shells = listOf("/data/data/com.termux/files/usr/bin/bash", "/system/bin/sh")
+        return shells.firstOrNull { File(it).exists() } ?: "/system/bin/sh"
+    }
+
+    private fun writeToTerminal(text: String) {
+        terminalSession?.write(text, 0, text.length)
+    }
+
+    private fun runSetupWithSelection(jsonStr: String) {
         val resourcesArray = JSONArray(jsonStr)
         if (resourcesArray.length() == 0) {
-            appendOutput("No resources selected.\n")
+            writeToTerminal("\r\n\u001B[33mNo resources selected.\u001B[0m\r\n")
             finishSetup()
             return
         }
 
-        appendOutput("Installing ${resourcesArray.length()} selected resources:\n")
+        writeToTerminal("\r\n")
+        writeToTerminal("\u001B[1;36m╔══════════════════════════════════════╗\u001B[0m\r\n")
+        writeToTerminal("\u001B[1;36m║         CODE-IDE Setup               ║\u001B[0m\r\n")
+        writeToTerminal("\u001B[1;36m╚══════════════════════════════════════╝\u001B[0m\r\n\r\n")
+        writeToTerminal("\u001B[1mInstalling ${resourcesArray.length()} selected resources:\u001B[0m\r\n")
+
         for (i in 0 until resourcesArray.length()) {
             val obj = resourcesArray.getJSONObject(i)
             val name = obj.getString("name")
             val version = obj.optString("version", "")
             val sizeBytes = obj.optLong("size", 0)
             val sizeMB = sizeBytes / (1024.0 * 1024.0)
-            appendOutput("  ${i + 1}. $name v$version (${String.format("%.1f", sizeMB)} MB)\n")
+            writeToTerminal("  \u001B[32m${i + 1}.\u001B[0m $name v$version (${String.format("%.1f", sizeMB)} MB)\r\n")
         }
-        appendOutput("\n")
+        writeToTerminal("\r\n")
 
-        // Build ResourceEntry list from JSON
         val entries = mutableListOf<ResourceManager.ResourceEntry>()
         for (i in 0 until resourcesArray.length()) {
             val obj = resourcesArray.getJSONObject(i)
@@ -83,22 +118,22 @@ class TerminalSetupActivity : AppCompatActivity() {
             )
         }
 
-        // Filter out already installed
         val toInstall = entries.filter { !resourceManager.isResourceInstalled(it) }
 
         if (toInstall.isEmpty()) {
-            appendOutput("All selected resources already installed.\n")
+            writeToTerminal("\u001B[32mAll selected resources already installed.\u001B[0m\r\n")
             finishSetup()
             return
         }
 
-        appendOutput("Need to download ${toInstall.size} resources.\n\n")
+        writeToTerminal("\u001B[33mNeed to download ${toInstall.size} resources.\u001B[0m\r\n\r\n")
 
-        // Download
+        handler.post { progressBar.visibility = View.VISIBLE }
+
         val success = resourceManager.downloadResources(
             toInstall,
             onResourceStart = { resource, current, total ->
-                appendOutput("[$current/$total] Downloading ${resource.name}...\n")
+                writeToTerminal("\u001B[1m[$current/$total]\u001B[0m Downloading ${resource.name}...\r\n")
             },
             onResourceProgress = { resource, progress ->
                 val pct = (progress * 100).toInt()
@@ -107,117 +142,127 @@ class TerminalSetupActivity : AppCompatActivity() {
                 }
             },
             onResourceComplete = { resource ->
-                appendOutput("  Downloaded ${resource.name}\n")
+                writeToTerminal("  \u001B[32m✓\u001B[0m Downloaded ${resource.name}\r\n")
             },
             onError = { error ->
-                appendOutput("ERROR: $error\n")
+                writeToTerminal("\u001B[31mERROR: $error\u001B[0m\r\n")
             }
         )
 
         if (!success) {
-            appendOutput("\nDownload failed. Check your connection and try again.\n")
+            writeToTerminal("\r\n\u001B[31mDownload failed. Check your connection and try again.\u001B[0m\r\n")
             updateStatus("Failed")
+            handler.post { progressBar.visibility = View.GONE }
             return
         }
 
-        appendOutput("\nDownloads complete. Extracting...\n\n")
+        writeToTerminal("\r\n\u001B[1mDownloads complete. Extracting...\u001B[0m\r\n\r\n")
 
-        // Extract
         for (resource in toInstall) {
-            appendOutput("Extracting ${resource.name}...\n")
+            writeToTerminal("Extracting ${resource.name}...\r\n")
             val result = resourceManager.extractResource(resource, object : ResourceManager.ExtractionListener {
                 override fun onExtractionStart(fileName: String) {}
-                override fun onExtractionComplete(destDir: java.io.File) {
-                    appendOutput("  Extracted to ${destDir.name}\n")
+                override fun onExtractionComplete(destDir: File) {
+                    writeToTerminal("  \u001B[32m✓\u001B[0m Extracted to ${destDir.name}\r\n")
                 }
                 override fun onExtractionError(error: String) {
-                    appendOutput("  ERROR: $error\n")
+                    writeToTerminal("  \u001B[31m✗\u001B[0m $error\r\n")
                 }
             })
             if (result.isFailure) {
-                appendOutput("Failed to extract ${resource.name}: ${result.exceptionOrNull()?.message}\n")
+                writeToTerminal("  \u001B[31mFailed to extract ${resource.name}: ${result.exceptionOrNull()?.message}\u001B[0m\r\n")
             }
         }
 
-        appendOutput("\nSetup complete!\n")
+        writeToTerminal("\r\n\u001B[1;32mSetup complete!\u001B[0m\r\n")
         finishSetup()
     }
 
-    private suspend fun runSetupLegacy() {
-        appendOutput("Fetching resource manifest...\n")
+    private fun runSetupLegacy() {
+        writeToTerminal("\r\n")
+        writeToTerminal("\u001B[1;36m╔══════════════════════════════════════╗\u001B[0m\r\n")
+        writeToTerminal("\u001B[1;36m║         CODE-IDE Setup               ║\u001B[0m\r\n")
+        writeToTerminal("\u001B[1;36m╚══════════════════════════════════════╝\u001B[0m\r\n\r\n")
+        writeToTerminal("\u001B[1mFetching resource manifest...\u001B[0m\r\n")
 
-        val manifestResult = resourceManager.fetchManifest()
-        if (manifestResult.isFailure) {
-            appendOutput("ERROR: Failed to fetch manifest: ${manifestResult.exceptionOrNull()?.message}\n")
-            appendOutput("Check your internet connection and try again.\n")
-            updateStatus("Failed")
-            return
-        }
+        scope.launch {
+            val manifestResult = withContext(Dispatchers.IO) { resourceManager.fetchManifest() }
+            if (manifestResult.isFailure) {
+                writeToTerminal("\u001B[31mERROR: Failed to fetch manifest: ${manifestResult.exceptionOrNull()?.message}\u001B[0m\r\n")
+                writeToTerminal("\u001B[33mCheck your internet connection and try again.\u001B[0m\r\n")
+                updateStatus("Failed")
+                handler.post { progressBar.visibility = View.GONE }
+                return@launch
+            }
 
-        val manifest = manifestResult.getOrThrow()
-        appendOutput("Manifest v${manifest.version} (${manifest.resources.size} resources)\n\n")
+            val manifest = manifestResult.getOrThrow()
+            writeToTerminal("Manifest v${manifest.version} (${manifest.resources.size} resources)\r\n\r\n")
 
-        val requiredResources = manifest.resources.filter { !resourceManager.isResourceInstalled(it) }
+            val requiredResources = manifest.resources.filter { !resourceManager.isResourceInstalled(it) }
 
-        if (requiredResources.isEmpty()) {
-            appendOutput("All resources already installed.\n")
+            if (requiredResources.isEmpty()) {
+                writeToTerminal("\u001B[32mAll resources already installed.\u001B[0m\r\n")
+                finishSetup()
+                return@launch
+            }
+
+            writeToTerminal("\u001B[1mNeed to download ${requiredResources.size} resources:\u001B[0m\r\n")
+            requiredResources.forEach { res ->
+                val sizeMB = res.size / (1024.0 * 1024.0)
+                writeToTerminal("  \u001B[32m-\u001B[0m ${res.name} (${String.format("%.1f", sizeMB)} MB)\r\n")
+            }
+            writeToTerminal("\r\n")
+
+            handler.post { progressBar.visibility = View.VISIBLE }
+
+            val success = resourceManager.downloadResources(
+                requiredResources,
+                onResourceStart = { resource, current, total ->
+                    writeToTerminal("\u001B[1m[$current/$total]\u001B[0m Downloading ${resource.name}...\r\n")
+                },
+                onResourceProgress = { resource, progress ->
+                    val pct = (progress * 100).toInt()
+                    handler.post {
+                        statusText.text = "Downloading ${resource.name}... $pct%"
+                    }
+                },
+                onResourceComplete = { resource ->
+                    writeToTerminal("  \u001B[32m✓\u001B[0m Downloaded ${resource.name}\r\n")
+                },
+                onError = { error ->
+                    writeToTerminal("\u001B[31mERROR: $error\u001B[0m\r\n")
+                }
+            )
+
+            if (!success) {
+                writeToTerminal("\r\n\u001B[31mDownload failed. Please check your connection and try again.\u001B[0m\r\n")
+                updateStatus("Failed")
+                handler.post { progressBar.visibility = View.GONE }
+                return@launch
+            }
+
+            writeToTerminal("\r\n\u001B[1mAll downloads complete. Extracting...\u001B[0m\r\n")
+
+            for (resource in requiredResources) {
+                writeToTerminal("Extracting ${resource.name}...\r\n")
+                val result = resourceManager.extractResource(resource, object : ResourceManager.ExtractionListener {
+                    override fun onExtractionStart(fileName: String) {}
+                    override fun onExtractionComplete(destDir: File) {
+                        writeToTerminal("  \u001B[32m✓\u001B[0m Extracted to ${destDir.name}\r\n")
+                    }
+                    override fun onExtractionError(error: String) {
+                        writeToTerminal("  \u001B[31m✗\u001B[0m $error\r\n")
+                    }
+                })
+                if (result.isFailure) {
+                    writeToTerminal("  \u001B[31mFailed to extract ${resource.name}: ${result.exceptionOrNull()?.message}\u001B[0m\r\n")
+                }
+            }
+
+            resourceManager.setInstalledVersion(manifest.version)
+            writeToTerminal("\r\n\u001B[1;32mSetup complete!\u001B[0m\r\n")
             finishSetup()
-            return
         }
-
-        appendOutput("Need to download ${requiredResources.size} resources:\n")
-        requiredResources.forEach { res ->
-            val sizeMB = res.size / (1024.0 * 1024.0)
-            appendOutput("  - ${res.name} (${String.format("%.1f", sizeMB)} MB)\n")
-        }
-        appendOutput("\n")
-
-        val success = resourceManager.downloadResources(
-            requiredResources,
-            onResourceStart = { resource, current, total ->
-                appendOutput("[$current/$total] Downloading ${resource.name}...\n")
-            },
-            onResourceProgress = { resource, progress ->
-                val pct = (progress * 100).toInt()
-                handler.post {
-                    statusText.text = "Downloading ${resource.name}... $pct%"
-                }
-            },
-            onResourceComplete = { resource ->
-                appendOutput("  Downloaded ${resource.name}\n")
-            },
-            onError = { error ->
-                appendOutput("ERROR: $error\n")
-            }
-        )
-
-        if (!success) {
-            appendOutput("\nDownload failed. Please check your connection and try again.\n")
-            updateStatus("Failed")
-            return
-        }
-
-        appendOutput("\nAll downloads complete. Extracting...\n")
-
-        for (resource in requiredResources) {
-            appendOutput("Extracting ${resource.name}...\n")
-            val result = resourceManager.extractResource(resource, object : ResourceManager.ExtractionListener {
-                override fun onExtractionStart(fileName: String) {}
-                override fun onExtractionComplete(destDir: java.io.File) {
-                    appendOutput("  Extracted to ${destDir.name}\n")
-                }
-                override fun onExtractionError(error: String) {
-                    appendOutput("  ERROR: $error\n")
-                }
-            })
-            if (result.isFailure) {
-                appendOutput("Failed to extract ${resource.name}: ${result.exceptionOrNull()?.message}\n")
-            }
-        }
-
-        resourceManager.setInstalledVersion(manifest.version)
-        appendOutput("\nSetup complete!\n")
-        finishSetup()
     }
 
     private fun finishSetup() {
@@ -229,13 +274,6 @@ class TerminalSetupActivity : AppCompatActivity() {
         }, 1500)
     }
 
-    private fun appendOutput(text: String) {
-        handler.post {
-            terminalOutput.append(text)
-            scrollView.post { scrollView.fullScroll(ScrollView.FOCUS_DOWN) }
-        }
-    }
-
     private fun updateStatus(text: String) {
         handler.post {
             statusText.text = text
@@ -245,5 +283,86 @@ class TerminalSetupActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         scope.cancel()
+        terminalSession?.finishIfRunning()
     }
+
+    // --- TerminalSessionClient ---
+
+    override fun onTextChanged(changedSession: TerminalSession) {
+        if (changedSession === terminalSession) {
+            handler.post { terminalView.onScreenUpdated() }
+        }
+    }
+
+    override fun onTitleChanged(changedSession: TerminalSession) {}
+
+    override fun onSessionFinished(finishedSession: TerminalSession) {}
+
+    override fun onCopyTextToClipboard(session: TerminalSession, text: String) {}
+
+    override fun onPasteTextFromClipboard(session: TerminalSession?) {}
+
+    override fun onBell(session: TerminalSession) {}
+
+    override fun onColorsChanged(changedSession: TerminalSession) {
+        handler.post {
+            terminalView.setBackgroundColor(changedSession.mEmulator.defaultBackgroundColor)
+        }
+    }
+
+    override fun onTerminalCursorStateChange(state: Boolean) {}
+
+    override fun setTerminalShellPid(session: TerminalSession, pid: Int) {}
+
+    override fun getTerminalCursorStyle(): Int? = null
+
+    override fun logError(tag: String, message: String) {}
+    override fun logWarn(tag: String, message: String) {}
+    override fun logInfo(tag: String, message: String) {}
+    override fun logDebug(tag: String, message: String) {}
+    override fun logVerbose(tag: String, message: String) {}
+    override fun logStackTraceWithMessage(tag: String, message: String, e: Exception?) {}
+    override fun logStackTrace(tag: String, e: Exception?) {}
+
+    // --- TerminalViewClient ---
+
+    override fun onScale(scale: Float): Float = 1.0f
+
+    override fun onSingleTapUp(e: MotionEvent) {}
+
+    override fun shouldBackButtonBeMappedToEscape(): Boolean = false
+
+    override fun shouldEnforceCharBasedInput(): Boolean = false
+
+    override fun shouldUseCtrlSpaceWorkaround(): Boolean = false
+
+    override fun isTerminalViewSelected(): Boolean = true
+
+    override fun copyModeChanged(copyMode: Boolean) {}
+
+    override fun onKeyDown(keyCode: Int, e: KeyEvent, session: TerminalSession?): Boolean = false
+
+    override fun onKeyUp(keyCode: Int, e: KeyEvent): Boolean = false
+
+    override fun onLongPress(event: MotionEvent): Boolean = false
+
+    override fun readControlKey(): Boolean = false
+
+    override fun readAltKey(): Boolean = false
+
+    override fun readShiftKey(): Boolean = false
+
+    override fun readFnKey(): Boolean = false
+
+    override fun onCodePoint(codePoint: Int, ctrlDown: Boolean, session: TerminalSession?): Boolean = false
+
+    override fun onEmulatorSet() {}
+
+    override fun logError(tag: String, message: String) {}
+    override fun logWarn(tag: String, message: String) {}
+    override fun logInfo(tag: String, message: String) {}
+    override fun logDebug(tag: String, message: String) {}
+    override fun logVerbose(tag: String, message: String) {}
+    override fun logStackTraceWithMessage(tag: String, message: String, e: Exception?) {}
+    override fun logStackTrace(tag: String, e: Exception?) {}
 }

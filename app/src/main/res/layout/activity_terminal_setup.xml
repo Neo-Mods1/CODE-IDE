@@ -4,36 +4,60 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#FF1A1C19">
+    android:fitsSystemWindows="true"
+    android:background="#FF000000">
 
-    <TextView
-        android:id="@+id/setup_status_text"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Setting up..."
-        android:textColor="#FF388E3C"
-        android:textSize="14sp"
-        android:fontFamily="monospace"
-        android:padding="12dp"
-        android:background="#FF0D1117" />
-
-    <ScrollView
-        android:id="@+id/terminal_scroll"
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:fillViewport="true">
+        android:layout_marginHorizontal="3dp">
+
+        <com.termux.view.TerminalView
+            android:id="@+id/terminal_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:defaultFocusHighlightEnabled="false"
+            android:focusableInTouchMode="true"
+            android:scrollbarThumbVertical="@drawable/terminal_scroll_shape"
+            android:scrollbars="vertical"
+            android:importantForAutofill="no"
+            android:autofillHints="password" />
+
+    </RelativeLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#FF222222" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="6dp"
+        android:background="#FF000000">
 
         <TextView
-            android:id="@+id/terminal_output"
-            android:layout_width="match_parent"
+            android:id="@+id/setup_status_text"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:textColor="#FF00FF00"
-            android:textSize="12sp"
-            android:fontFamily="monospace"
-            android:padding="12dp"
-            android:textIsSelectable="true"
-            android:lineSpacingMultiplier="1.2" />
-    </ScrollView>
+            android:layout_weight="1"
+            android:text=""
+            android:textColor="#FF888888"
+            android:textSize="11sp"
+            android:fontFamily="monospace" />
+
+        <ProgressBar
+            android:id="@+id/setup_progress"
+            style="?android:attr/progressBarStyleSmall"
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:indeterminate="true"
+            android:indeterminateTint="#FF888888"
+            android:visibility="gone" />
+    </LinearLayout>
 
 </LinearLayout>

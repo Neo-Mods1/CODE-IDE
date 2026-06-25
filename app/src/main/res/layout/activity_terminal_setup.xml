@@ -26,11 +26,14 @@
 
     </RelativeLayout>
 
-    <View
-        android:id="@+id/bottom_space_view"
+    <com.neo.ide.setup.ExtraKeysView
+        android:id="@+id/extra_keys_view"
         android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="@android:color/transparent" />
+        android:layout_height="wrap_content"
+        android:background="#FF000000"
+        android:paddingHorizontal="2dp"
+        android:paddingTop="2dp"
+        android:paddingBottom="4dp" />
 
     <LinearLayout
         android:layout_width="match_parent"

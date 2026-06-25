@@ -38,9 +38,15 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_terminal_setup)
 
+        window.decorView.setBackgroundColor(0xFF000000.toInt())
+        window.statusBarColor = 0xFF000000.toInt()
+        window.navigationBarColor = 0xFF000000.toInt()
+
         terminalView = findViewById(R.id.terminal_view)
         statusText = findViewById(R.id.setup_status_text)
         progressBar = findViewById(R.id.setup_progress)
+        val extraKeys = findViewById<ExtraKeysView>(R.id.extra_keys_view)
+        extraKeys.setTerminalView(terminalView)
 
         terminalView.setTerminalViewClient(object : TerminalViewClient {
             override fun onScale(scale: Float): Float = 1.0f

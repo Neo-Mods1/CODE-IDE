@@ -90,7 +90,7 @@ class TemplateDetailsFragment : Fragment() {
         val widgets = mutableListOf<TemplateWidgetsAdapter.TemplateWidget>()
 
         widgets.add(TemplateWidgetsAdapter.TemplateWidget.TextField(
-            label = getString(R.string.project_name),
+            label = getString(R.string.tpl_project_name),
             value = projectName,
             onValueChanged = { projectName = it }
         ))

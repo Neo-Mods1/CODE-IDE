@@ -102,7 +102,7 @@
     <string name="new_project">New project</string>
     <string name="previous">Previous</string>
     <string name="create_project">Create project</string>
-    <string name="project_name">Project name</string>
+    <string name="tpl_project_name">Project name</string>
     <string name="package_name">Package name</string>
     <string name="save_location">Save location</string>
     <string name="language">Language</string>

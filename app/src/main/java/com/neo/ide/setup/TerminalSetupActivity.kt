@@ -13,6 +13,7 @@ import com.neo.ide.download.SetupState
 import com.neo.ide.activities.MainActivity
 import android.content.Intent
 import kotlinx.coroutines.*
+import org.json.JSONArray
 
 class TerminalSetupActivity : AppCompatActivity() {
 
@@ -31,18 +32,118 @@ class TerminalSetupActivity : AppCompatActivity() {
         scrollView = findViewById(R.id.terminal_scroll)
         statusText = findViewById(R.id.setup_status_text)
 
-        val args = intent.getStringExtra("setup_args") ?: ""
+        val selectedResourcesJson = intent.getStringExtra("selected_resources")
 
         appendOutput("CODE-IDE Setup")
-        appendOutput("==============\n")
-        appendOutput("Arguments: $args\n")
+        appendOutput("==============\n\n")
 
         scope.launch {
-            runSetup(args)
+            if (selectedResourcesJson != null) {
+                runSetupWithSelection(selectedResourcesJson)
+            } else {
+                runSetupLegacy()
+            }
         }
     }
 
-    private suspend fun runSetup(args: String) {
+    private suspend fun runSetupWithSelection(jsonStr: String) {
+        val resourcesArray = JSONArray(jsonStr)
+        if (resourcesArray.length() == 0) {
+            appendOutput("No resources selected.\n")
+            finishSetup()
+            return
+        }
+
+        appendOutput("Installing ${resourcesArray.length()} selected resources:\n")
+        for (i in 0 until resourcesArray.length()) {
+            val obj = resourcesArray.getJSONObject(i)
+            val name = obj.getString("name")
+            val version = obj.optString("version", "")
+            val sizeBytes = obj.optLong("size", 0)
+            val sizeMB = sizeBytes / (1024.0 * 1024.0)
+            appendOutput("  ${i + 1}. $name v$version (${String.format("%.1f", sizeMB)} MB)\n")
+        }
+        appendOutput("\n")
+
+        // Build ResourceEntry list from JSON
+        val entries = mutableListOf<ResourceManager.ResourceEntry>()
+        for (i in 0 until resourcesArray.length()) {
+            val obj = resourcesArray.getJSONObject(i)
+            entries.add(
+                ResourceManager.ResourceEntry(
+                    name = obj.getString("name"),
+                    category = obj.getString("category"),
+                    version = obj.optString("version", ""),
+                    size = obj.optLong("size", 0),
+                    sha256 = obj.optString("sha256", ""),
+                    format = obj.optString("format", "tar.xz"),
+                    url = obj.getString("url"),
+                    destination = obj.optString("destination", "{install_dir}/${obj.getString("name")}")
+                )
+            )
+        }
+
+        // Filter out already installed
+        val toInstall = entries.filter { !resourceManager.isResourceInstalled(it) }
+
+        if (toInstall.isEmpty()) {
+            appendOutput("All selected resources already installed.\n")
+            finishSetup()
+            return
+        }
+
+        appendOutput("Need to download ${toInstall.size} resources.\n\n")
+
+        // Download
+        val success = resourceManager.downloadResources(
+            toInstall,
+            onResourceStart = { resource, current, total ->
+                appendOutput("[$current/$total] Downloading ${resource.name}...\n")
+            },
+            onResourceProgress = { resource, progress ->
+                val pct = (progress * 100).toInt()
+                handler.post {
+                    statusText.text = "Downloading ${resource.name}... $pct%"
+                }
+            },
+            onResourceComplete = { resource ->
+                appendOutput("  Downloaded ${resource.name}\n")
+            },
+            onError = { error ->
+                appendOutput("ERROR: $error\n")
+            }
+        )
+
+        if (!success) {
+            appendOutput("\nDownload failed. Check your connection and try again.\n")
+            updateStatus("Failed")
+            return
+        }
+
+        appendOutput("\nDownloads complete. Extracting...\n\n")
+
+        // Extract
+        for (resource in toInstall) {
+            appendOutput("Extracting ${resource.name}...\n")
+            val result = resourceManager.extractResource(resource, object : ResourceManager.ExtractionListener {
+                override fun onExtractionStart(fileName: String) {}
+                override fun onExtractionComplete(destDir: java.io.File) {
+                    appendOutput("  Extracted to ${destDir.name}\n")
+                }
+                override fun onExtractionError(error: String) {
+                    appendOutput("  ERROR: $error\n")
+                }
+            })
+            if (result.isFailure) {
+                appendOutput("Failed to extract ${resource.name}: ${result.exceptionOrNull()?.message}\n")
+            }
+        }
+
+        appendOutput("\nSetup complete!\n")
+        finishSetup()
+    }
+
+    private suspend fun runSetupLegacy() {
         appendOutput("Fetching resource manifest...\n")
 
         val manifestResult = resourceManager.fetchManifest()

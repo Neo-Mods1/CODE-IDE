@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
@@ -13,6 +14,8 @@ import com.neo.ide.R
 import com.neo.ide.activities.MainActivity
 import com.neo.ide.download.SetupState
 import com.neo.ide.setup.TerminalSetupActivity
+import org.json.JSONArray
+import org.json.JSONObject
 
 class OnboardingActivity : AppCompatActivity() {
 
@@ -52,18 +55,22 @@ class OnboardingActivity : AppCompatActivity() {
             val current = viewPager.currentItem
             when {
                 current == 0 -> viewPager.currentItem = 1
-                current == 1 && permissionsFragment.allPermissionsGranted() -> viewPager.currentItem = 2
+                current == 1 && isPermissionsGranted() -> viewPager.currentItem = 2
                 current == 2 -> startSetup()
             }
         }
 
         skipBtn.setOnClickListener {
-            if (permissionsFragment.allPermissionsGranted()) {
+            if (isPermissionsGranted()) {
                 startMainActivity()
             }
         }
 
         updateUI(0)
+    }
+
+    private fun isPermissionsGranted(): Boolean {
+        return permissionsFragment.isAdded && permissionsFragment.allPermissionsGranted()
     }
 
     private fun updateUI(position: Int) {
@@ -75,7 +82,7 @@ class OnboardingActivity : AppCompatActivity() {
                 skipBtn.visibility = View.VISIBLE
             }
             1 -> {
-                nextBtn.text = if (permissionsFragment.allPermissionsGranted()) "Next" else "Grant Permissions"
+                nextBtn.text = if (isPermissionsGranted()) "Next" else "Grant Permissions"
                 skipBtn.visibility = View.VISIBLE
             }
             2 -> {
@@ -86,14 +93,34 @@ class OnboardingActivity : AppCompatActivity() {
     }
 
     private fun startSetup() {
-        val args = setupConfigFragment.getSetupArgs()
+        val selectedResources = setupConfigFragment.getSelectedResources()
         val autoInstall = setupConfigFragment.isAutoInstall()
+
+        if (selectedResources.isEmpty()) {
+            Toast.makeText(this, "Select at least one resource to install", Toast.LENGTH_SHORT).show()
+            return
+        }
 
         SetupState.setOnboardingComplete(this, true)
 
         if (autoInstall) {
+            val resourcesJson = JSONArray()
+            for (res in selectedResources) {
+                val obj = JSONObject().apply {
+                    put("name", res.name)
+                    put("category", res.category)
+                    put("version", res.version)
+                    put("url", res.url)
+                    put("size", res.size)
+                    put("sha256", res.sha256)
+                    put("format", res.format)
+                    put("destination", res.destination)
+                }
+                resourcesJson.put(obj)
+            }
+
             val intent = Intent(this, TerminalSetupActivity::class.java).apply {
-                putExtra("setup_args", args)
+                putExtra("selected_resources", resourcesJson.toString())
             }
             startActivity(intent)
         } else {
@@ -111,7 +138,7 @@ class OnboardingActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         if (viewPager.currentItem == 1) {
-            nextBtn.text = if (permissionsFragment.allPermissionsGranted()) "Next" else "Grant Permissions"
+            nextBtn.text = if (isPermissionsGranted()) "Next" else "Grant Permissions"
         }
     }
 }

@@ -5,10 +5,10 @@ plugins {
 
 android {
     namespace = "com.termux.view"
-    compileSdk = project.property("compileSdk").toString().toInt()
+    compileSdk = 36
 
     defaultConfig {
-        minSdk = project.property("minSdk").toString().toInt()
+        minSdk = 30
     }
 
     compileOptions {
@@ -19,5 +19,5 @@ android {
 
 dependencies {
     api(project(":termux:emulator"))
-    implementation("androidx.annotation:annotation:${project.property("annotationVersion")}")
+    implementation("androidx.annotation:annotation:1.7.1")
 }

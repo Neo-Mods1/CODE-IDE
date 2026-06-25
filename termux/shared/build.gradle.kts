@@ -5,10 +5,10 @@ plugins {
 
 android {
     namespace = "com.termux.shared"
-    compileSdk = project.property("compileSdk").toString().toInt()
+    compileSdk = 36
 
     defaultConfig {
-        minSdk = project.property("minSdk").toString().toInt()
+        minSdk = 30
     }
 
     compileOptions {
@@ -18,9 +18,9 @@ android {
 }
 
 dependencies {
-    implementation("androidx.appcompat:appcompat:${project.property("appcompatVersion")}")
-    implementation("androidx.annotation:annotation:${project.property("annotationVersion")}")
-    implementation("androidx.core:core-ktx:${project.property("coreKtxVersion")}")
-    implementation("com.google.android.material:material:${project.property("materialVersion")}")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("androidx.annotation:annotation:1.7.1")
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("com.google.android.material:material:1.11.0")
     implementation(project(":termux:view"))
 }

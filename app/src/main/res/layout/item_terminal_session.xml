@@ -40,18 +40,6 @@
             android:fontFamily="monospace"
             android:maxLines="1"
             android:ellipsize="end" />
-
-        <TextView
-            android:id="@+id/session_info"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="/data/data/com.neo.ide.debug/files"
-            android:textColor="#FF666666"
-            android:textSize="10sp"
-            android:fontFamily="monospace"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:layout_marginTop="2dp" />
     </LinearLayout>
 
     <TextView

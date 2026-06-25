@@ -77,12 +77,10 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
                 val view = convertView ?: layoutInflater.inflate(R.layout.item_terminal_session, parent, false)
                 val session = sessions.getOrNull(position)
                 val nameText = view.findViewById<TextView>(R.id.session_name)
-                val infoText = view.findViewById<TextView>(R.session_info)
                 val closeBtn = view.findViewById<TextView>(R.id.btn_close_session)
 
                 if (session != null) {
-                    nameText.text = "Session ${position + 1}"
-                    infoText.text = session.mSessionName ?: "shell"
+                    nameText.text = "Session ${position + 1} — ${session.mSessionName ?: "shell"}"
                     nameText.setTextColor(if (session == currentSession) Color.parseColor("#FF00FF00") else Color.WHITE)
 
                     closeBtn.setOnClickListener {

@@ -66,6 +66,7 @@ class PermissionsFragment : Fragment() {
     }
 
     fun allPermissionsGranted(): Boolean {
+        if (!isAdded) return false
         return isStoragePermissionGranted() && canRequestPackageInstalls()
     }
 

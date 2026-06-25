@@ -1,14 +1,23 @@
 package com.neo.ide.setup
 
 import android.graphics.Color
-import android.graphics.Typeface
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.TypedValue
+import android.view.Gravity
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
+import android.widget.ArrayAdapter
+import android.widget.ListView
+import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import com.neo.ide.R
 import com.neo.ide.download.ResourceManager
 import com.neo.ide.download.SetupState
@@ -21,19 +30,24 @@ import com.termux.view.TerminalViewClient
 import kotlinx.coroutines.*
 import org.json.JSONArray
 import java.io.File
-import android.view.KeyEvent
 
 class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
 
     private lateinit var terminalView: TerminalView
+    private lateinit var drawerLayout: DrawerLayout
+    private lateinit var sessionListView: ListView
     private val handler = Handler(Looper.getMainLooper())
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private val resourceManager by lazy { ResourceManager(this) }
 
-    private var terminalSession: TerminalSession? = null
-    private val pendingOutput = mutableListOf<String>()
+    private val sessions = mutableListOf<TerminalSession>()
+    private var currentSession: TerminalSession? = null
+    private val pendingOutput = mutableMapOf<Int, MutableList<String>>()
     private var currentFontSize = 0
-    private var scaleFactor = 1.0f
+    private var sessionCounter = 0
+    private var setupCompleted = false
+
+    private lateinit var sessionAdapter: ArrayAdapter<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,16 +58,49 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
         window.navigationBarColor = Color.BLACK
 
         terminalView = findViewById(R.id.terminal_view)
+        drawerLayout = findViewById(R.id.drawer_layout)
+        sessionListView = findViewById(R.id.terminal_sessions_list)
         val extraKeys = findViewById<ExtraKeysView>(R.id.extra_keys_view)
         extraKeys.setTerminalView(terminalView)
 
         currentFontSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 14f, resources.displayMetrics).toInt()
 
+        sessionAdapter = object : ArrayAdapter<String>(this, R.layout.item_terminal_session) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = convertView ?: layoutInflater.inflate(R.layout.item_terminal_session, parent, false)
+                val session = sessions.getOrNull(position)
+                val nameText = view.findViewById<TextView>(R.id.session_name)
+                val infoText = view.findViewById<TextView>(R.session_info)
+                val closeBtn = view.findViewById<TextView>(R.id.btn_close_session)
+
+                if (session != null) {
+                    nameText.text = "Session ${position + 1}"
+                    infoText.text = session.mSessionName ?: "shell"
+                    nameText.setTextColor(if (session == currentSession) Color.parseColor("#FF00FF00") else Color.WHITE)
+
+                    closeBtn.setOnClickListener {
+                        removeSession(session)
+                    }
+
+                    view.setOnClickListener {
+                        switchToSession(session)
+                        drawerLayout.closeDrawer(GravityCompat.START)
+                    }
+                }
+                return view
+            }
+        }
+        sessionListView.adapter = sessionAdapter
+
+        findViewById<TextView>(R.id.new_session_button).setOnClickListener {
+            createNewSession()
+            drawerLayout.closeDrawer(GravityCompat.START)
+        }
+
         terminalView.setTerminalViewClient(object : TerminalViewClient {
             override fun onScale(scale: Float): Float {
                 if (scale < 0.9f || scale > 1.1f) {
-                    val increase = scale > 1f
-                    changeFontSize(increase)
+                    changeFontSize(scale > 1f)
                     return 1.0f
                 }
                 return scale
@@ -66,18 +113,22 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
             override fun copyModeChanged(copyMode: Boolean) {}
             override fun onKeyDown(keyCode: Int, e: KeyEvent, session: TerminalSession?): Boolean = false
             override fun onKeyUp(keyCode: Int, e: KeyEvent): Boolean = false
-            override fun onLongPress(event: MotionEvent): Boolean = false
+            override fun onLongPress(event: MotionEvent) {}
             override fun readControlKey(): Boolean = false
             override fun readAltKey(): Boolean = false
             override fun readShiftKey(): Boolean = false
             override fun readFnKey(): Boolean = false
             override fun onCodePoint(codePoint: Int, ctrlDown: Boolean, session: TerminalSession?): Boolean = false
             override fun onEmulatorSet() {
-                val session = terminalSession ?: return
+                val session = currentSession ?: return
                 session.emulator?.let { em ->
                     window.decorView.setBackgroundColor(em.mColors.mCurrentColors[257])
                 }
-                flushPendingOutput()
+                val idx = sessions.indexOf(session)
+                if (idx >= 0) {
+                    val pending = pendingOutput.remove(idx)
+                    pending?.forEach { session.writeToTerminal(it) }
+                }
             }
             override fun logError(tag: String, message: String) {}
             override fun logWarn(tag: String, message: String) {}
@@ -88,22 +139,64 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
             override fun logStackTrace(tag: String, e: Exception?) {}
         })
 
-        val shell = getShellPath()
-        val cwd = filesDir.absolutePath
-        terminalSession = TerminalSession(shell, cwd, arrayOf(shell), null, null, this)
-        terminalSession?.mSessionName = "setup"
-        terminalView.setTextSize(currentFontSize)
-        terminalView.attachSession(terminalSession)
+        createNewSession()
 
         val selectedResourcesJson = intent.getStringExtra("selected_resources")
 
         scope.launch {
-            delay(300)
+            delay(500)
             if (selectedResourcesJson != null) {
                 runSetupWithSelection(selectedResourcesJson)
             } else {
                 runSetupLegacy()
             }
+        }
+    }
+
+    private fun createNewSession(): TerminalSession {
+        sessionCounter++
+        val shell = getShellPath()
+        val cwd = filesDir.absolutePath
+        val session = TerminalSession(shell, cwd, arrayOf(shell), null, null, this)
+        session.mSessionName = "session_$sessionCounter"
+        sessions.add(session)
+        sessionAdapter.notifyDataSetChanged()
+
+        if (currentSession == null) {
+            switchToSession(session)
+        }
+        return session
+    }
+
+    private fun switchToSession(session: TerminalSession) {
+        if (session == currentSession) return
+        currentSession = session
+        terminalView.setTextSize(currentFontSize)
+        terminalView.attachSession(session)
+        sessionAdapter.notifyDataSetChanged()
+    }
+
+    private fun removeSession(session: TerminalSession) {
+        if (sessions.size <= 1) {
+            Toast.makeText(this, "Can't close last session", Toast.LENGTH_SHORT).show()
+            return
+        }
+        session.finishIfRunning()
+        sessions.remove(session)
+        if (currentSession == session) {
+            currentSession = null
+            switchToSession(sessions.first())
+        }
+        sessionAdapter.notifyDataSetChanged()
+    }
+
+    private fun writeToTerminal(text: String) {
+        val session = currentSession ?: return
+        val idx = sessions.indexOf(session)
+        if (session.emulator != null) {
+            session.writeToTerminal(text)
+        } else {
+            pendingOutput.getOrPut(idx) { mutableListOf() }.add(text)
         }
     }
 
@@ -114,24 +207,6 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
         val maxSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 256f, resources.displayMetrics).toInt()
         currentFontSize = currentFontSize.coerceIn(minSize, maxSize)
         terminalView.setTextSize(currentFontSize)
-    }
-
-    private fun flushPendingOutput() {
-        if (pendingOutput.isEmpty()) return
-        val session = terminalSession ?: return
-        for (text in pendingOutput) {
-            session.writeToTerminal(text)
-        }
-        pendingOutput.clear()
-    }
-
-    private fun writeToTerminal(text: String) {
-        val session = terminalSession
-        if (session != null && session.emulator != null) {
-            session.writeToTerminal(text)
-        } else {
-            pendingOutput.add(text)
-        }
     }
 
     private fun getShellPath(): String {
@@ -324,8 +399,11 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
     }
 
     private fun finishSetup() {
+        if (setupCompleted) return
+        setupCompleted = true
         SetupState.setSetupComplete(this, true)
         handler.postDelayed({
+            TerminalService.stop(this)
             startActivity(Intent(this, MainActivity::class.java))
             finish()
         }, 1500)
@@ -334,17 +412,26 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
     override fun onDestroy() {
         super.onDestroy()
         scope.cancel()
-        terminalSession?.finishIfRunning()
+        sessions.forEach { it.finishIfRunning() }
+        if (isFinishing) {
+            TerminalService.stop(this)
+        }
     }
 
     override fun onTextChanged(changedSession: TerminalSession) {
-        if (changedSession === terminalSession) {
+        if (changedSession === currentSession) {
             handler.post { terminalView.onScreenUpdated() }
         }
     }
 
-    override fun onTitleChanged(changedSession: TerminalSession) {}
-    override fun onSessionFinished(finishedSession: TerminalSession) {}
+    override fun onTitleChanged(changedSession: TerminalSession) {
+        handler.post { sessionAdapter.notifyDataSetChanged() }
+    }
+
+    override fun onSessionFinished(finishedSession: TerminalSession) {
+        handler.post { sessionAdapter.notifyDataSetChanged() }
+    }
+
     override fun onCopyTextToClipboard(session: TerminalSession, text: String) {}
     override fun onPasteTextFromClipboard(session: TerminalSession?) {}
     override fun onBell(session: TerminalSession) {}

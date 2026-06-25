@@ -7,24 +7,98 @@
     android:orientation="vertical"
     android:fitsSystemWindows="true">
 
-    <RelativeLayout
+    <androidx.drawerlayout.widget.DrawerLayout
+        android:id="@+id/drawer_layout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginHorizontal="3dp">
+        android:layout_weight="1">
 
-        <com.termux.view.TerminalView
-            android:id="@+id/terminal_view"
+        <!-- Main terminal content -->
+        <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:defaultFocusHighlightEnabled="false"
-            android:focusableInTouchMode="true"
-            android:scrollbarThumbVertical="@drawable/terminal_scroll_shape"
-            android:scrollbars="vertical"
-            android:importantForAutofill="no"
-            android:autofillHints="password" />
+            android:layout_marginHorizontal="3dp">
 
-    </RelativeLayout>
+            <com.termux.view.TerminalView
+                android:id="@+id/terminal_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:defaultFocusHighlightEnabled="false"
+                android:focusableInTouchMode="true"
+                android:scrollbarThumbVertical="@drawable/terminal_scroll_shape"
+                android:scrollbars="vertical"
+                android:importantForAutofill="no"
+                android:autofillHints="password" />
+
+        </RelativeLayout>
+
+        <!-- Left drawer - terminal sessions -->
+        <LinearLayout
+            android:id="@+id/left_drawer"
+            android:layout_width="240dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="start"
+            android:orientation="vertical"
+            android:background="#FF111111">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Terminal Sessions"
+                android:textColor="#FF888888"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:fontFamily="monospace"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="10dp"
+                android:background="#FF0A0A0A" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#FF222222" />
+
+            <ListView
+                android:id="@+id/terminal_sessions_list"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:divider="#FF222222"
+                android:dividerHeight="1dp"
+                android:choiceMode="singleChoice" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#FF222222" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="8dp">
+
+                <TextView
+                    android:id="@+id/new_session_button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="+ New Session"
+                    android:textColor="#FF00FF00"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:fontFamily="monospace"
+                    android:gravity="center"
+                    android:paddingVertical="8dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </androidx.drawerlayout.widget.DrawerLayout>
 
     <com.neo.ide.setup.ExtraKeysView
         android:id="@+id/extra_keys_view"

@@ -11,6 +11,7 @@ import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.KeyEvent
@@ -86,7 +87,7 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
                 val session = currentSession ?: return
                 val keyCode = ExtraKeysConstants.PRIMARY_KEY_CODES_FOR_STRINGS[key]
                 if (keyCode != null) {
-                    val event = KeyEvent(KeyEvent.getEventTime(), KeyEvent.getEventTime(), KeyEvent.ACTION_UP, keyCode, 0)
+                    val event = KeyEvent(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, keyCode, 0)
                     terminalView.onKeyDown(keyCode, event)
                 } else if (key.length == 1) {
                     session.write(key)

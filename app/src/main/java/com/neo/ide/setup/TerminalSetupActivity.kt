@@ -172,9 +172,13 @@ class TerminalSetupActivity : BaseActivity(), TerminalSessionClient {
                 }
                 return scale
             }
-            override fun onSingleTapUp(e: MotionEvent) {}
+            override fun onSingleTapUp(e: MotionEvent) {
+                terminalView.requestFocus()
+                val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+                imm.showSoftInput(terminalView, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+            }
             override fun shouldBackButtonBeMappedToEscape(): Boolean = false
-            override fun shouldEnforceCharBasedInput(): Boolean = false
+            override fun shouldEnforceCharBasedInput(): Boolean = true
             override fun shouldUseCtrlSpaceWorkaround(): Boolean = false
             override fun isTerminalViewSelected(): Boolean = true
             override fun copyModeChanged(copyMode: Boolean) {}

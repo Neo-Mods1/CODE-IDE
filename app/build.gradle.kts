@@ -101,8 +101,6 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             isJniDebuggable = false
-            applicationIdSuffix = ".debug"
-            versionNameSuffix = "-debug"
             signingConfig = signingConfigs.findByName("appSigning")
         }
     }

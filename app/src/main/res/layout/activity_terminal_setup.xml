@@ -108,7 +108,7 @@
     <com.termux.shared.termux.extrakeys.ExtraKeysView
         android:id="@+id/extra_keys_view"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="75dp"
         android:background="@android:color/black"
         android:paddingHorizontal="2dp"
         android:paddingTop="2dp"

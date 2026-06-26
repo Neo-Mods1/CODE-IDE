@@ -41,7 +41,7 @@ fun findLatestBootstrapTag(): String {
         conn.disconnect()
     }
     // Fallback to known tag
-    return "bootstrap-2025.06.26"
+    return "bootstrap-2026.06.26"
 }
 
 val bootstrapVersion = findLatestBootstrapTag()
@@ -75,8 +75,6 @@ assemblyFile.writeText(buildString {
     appendLine("    .incbin \"${bootstrapFiles["aarch64"]!!.absolutePath.replace("\\", "\\\\")}\"")
     appendLine("#elif defined __arm__")
     appendLine("    .incbin \"${bootstrapFiles["arm"]!!.absolutePath.replace("\\", "\\\\")}\"")
-    appendLine("#elif defined __x86_64__")
-    appendLine("    .incbin \"${bootstrapFiles["x86_64"]!!.absolutePath.replace("\\", "\\\\")}\"")
     appendLine("#else")
     appendLine("# error Unsupported arch")
     appendLine("#endif")

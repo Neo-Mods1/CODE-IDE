@@ -61,7 +61,7 @@ jobs:
           echo "success=false" >> $GITHUB_OUTPUT
         fi
 
-    - name: Upload APK artifact
+    - name: Upload APK artifacts
       if: steps.check.outputs.success == 'true'
       uses: actions/upload-artifact@v4
       with:
@@ -69,25 +69,29 @@ jobs:
         path: app/build/outputs/apk/release/*.apk
         retention-days: 7
 
-    - name: Send success with APK to Telegram
+    - name: Send success with APKs to Telegram
       if: steps.check.outputs.success == 'true'
       env:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       run: |
-        APK_FILE=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
-        APK_SIZE=$(du -h "$APK_FILE" | cut -f1)
         BUILD_TIME=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
         COMMIT_MSG=$(echo "${{ github.event.head_commit.message || github.event.pull_request.title || 'N/A' }}" | head -1)
 
+        TOTAL_SIZE=$(du -sh app/build/outputs/apk/release/ | cut -f1)
+
         curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
           -d chat_id="${TELEGRAM_CHAT_ID}" \
-          -d text="✅ BUILD SUCCESSFUL%0APackage: CODE-IDE%0ASize: ${APK_SIZE}%0ATime: ${BUILD_TIME}%0ABranch: ${{ github.ref_name }}%0ACommit: ${COMMIT_MSG}%0A%0ASending APK..."
+          -d text="✅ BUILD SUCCESSFUL%0APackage: CODE-IDE%0ATotal: ${TOTAL_SIZE}%0ATime: ${BUILD_TIME}%0ABranch: ${{ github.ref_name }}%0ACommit: ${COMMIT_MSG}%0A%0ASending APKs..."
 
-        curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
-          -F chat_id="${TELEGRAM_CHAT_ID}" \
-          -F document=@"${APK_FILE}" \
-          -F caption="CODE-IDE v${{ github.run_number }} - Release APK"
+        for APK in app/build/outputs/apk/release/*.apk; do
+          APK_NAME=$(basename "$APK")
+          APK_SIZE=$(du -h "$APK" | cut -f1)
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
+            -F chat_id="${TELEGRAM_CHAT_ID}" \
+            -F document=@"${APK}" \
+            -F caption="${APK_NAME} (${APK_SIZE})"
+        done
 
     - name: Send failure notification to Telegram
       if: steps.check.outputs.success == 'false'

@@ -1,3 +1,10 @@
+/**
+ *	(っ◔◡◔)っ ♥
+ *
+ *	Telegram Contact • @NeoModsDev
+ *	Telegram Channel • https://t.me/NeoModsChannel
+ */
+
 package com.termux.shared.shell.command.environment;
 
 public class ShellEnvironmentVariable implements Comparable<ShellEnvironmentVariable> {

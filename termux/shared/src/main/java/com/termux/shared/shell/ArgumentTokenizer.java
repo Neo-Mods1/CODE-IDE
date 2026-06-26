@@ -1,3 +1,10 @@
+/**
+ *	(っ◔◡◔)っ ♥
+ *
+ *	Telegram Contact • @NeoModsDev
+ *	Telegram Channel • https://t.me/NeoModsChannel
+ */
+
 /*BEGIN_COPYRIGHT_BLOCK
  *
  * Copyright (c) 2001-2010, JavaPLT group at Rice University (drjava@rice.edu)

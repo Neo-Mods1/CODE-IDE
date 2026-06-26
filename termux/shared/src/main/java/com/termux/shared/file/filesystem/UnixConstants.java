@@ -1,3 +1,10 @@
+/**
+ *	(っ◔◡◔)っ ♥
+ *
+ *	Telegram Contact • @NeoModsDev
+ *	Telegram Channel • https://t.me/NeoModsChannel
+ */
+
 
 /*
  * Copyright (c) 2008, 2009, Oracle and/or its affiliates. All rights reserved.

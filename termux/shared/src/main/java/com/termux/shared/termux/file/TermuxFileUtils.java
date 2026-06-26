@@ -1,3 +1,10 @@
+/**
+ *	(っ◔◡◔)っ ♥
+ *
+ *	Telegram Contact • @NeoModsDev
+ *	Telegram Channel • https://t.me/NeoModsChannel
+ */
+
 package com.termux.shared.termux.file;
 
 import static com.termux.shared.termux.TermuxConstants.TERMUX_PREFIX_DIR_PATH;

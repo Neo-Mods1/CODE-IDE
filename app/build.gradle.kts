@@ -1,3 +1,5 @@
+import java.util.Base64
+import java.io.File
 import java.util.Properties
 
 val v = Properties().apply {
@@ -14,6 +16,8 @@ val keystoreProperties = Properties()
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(keystorePropertiesFile.inputStream())
 }
+
+val signingFromEnv = !System.getenv("KEYSTORE_BASE64").isNullOrEmpty()
 
 android {
     namespace = "com.neo.ide"
@@ -33,7 +37,15 @@ android {
 
     signingConfigs {
         create("release") {
-            if (keystorePropertiesFile.exists()) {
+            if (signingFromEnv) {
+                val ksFile = File(projectDir, "release-key-env.jks")
+                val decoded = Base64.getDecoder().decode(System.getenv("KEYSTORE_BASE64"))
+                ksFile.writeBytes(decoded)
+                storeFile = ksFile
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            } else if (keystorePropertiesFile.exists()) {
                 storeFile = file(keystoreProperties["storeFile"] as String)
                 storePassword = keystoreProperties["storePassword"] as String
                 keyAlias = keystoreProperties["keyAlias"] as String

@@ -35,6 +35,26 @@ android {
         }
     }
 
+    // Debug: arm64 only via ndk.abiFilters
+    // Release: splits for per-ABI APKs
+    val isRelease = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
+    if (!isRelease) {
+        defaultConfig {
+            ndk {
+                abiFilters += "arm64-v8a"
+            }
+        }
+    } else {
+        splits {
+            abi {
+                isEnable = true
+                reset()
+                include("arm64-v8a", "armeabi-v7a")
+                isUniversalApk = false
+            }
+        }
+    }
+
     signingConfigs {
         create("release") {
             if (signingFromEnv) {
@@ -82,17 +102,6 @@ android {
     buildFeatures {
         viewBinding = true
         buildConfig = true
-    }
-
-val isRelease = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
-
-    splits {
-        abi {
-            isEnable = isRelease
-            reset()
-            include("arm64-v8a", "armeabi-v7a")
-            isUniversalApk = false
-        }
     }
 
     packaging {

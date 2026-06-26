@@ -15,12 +15,38 @@ plugins {
 // --- Bootstrap download & assembly generation (runs at configuration time like AndroidIDE's plugin) ---
 // Bootstrap archives are built with TERMUX_APP_PACKAGE="com.neo.ide" so binaries
 // have the correct hardcoded paths for our app.
-val bootstrapVersion = "bootstrap-2025.06.26"
+// We find the latest bootstrap-* release from the resources repo.
 val bootstrapDir = layout.buildDirectory.dir("bootstrap-packages").get().asFile
 val assemblyFile = file("src/main/cpp/termux-bootstrap-zip.S")
 
+fun findLatestBootstrapTag(): String {
+    val apiUrl = "https://api.github.com/repos/Neo-Mods1/CODE-IDE-resources/releases"
+    val conn = URL(apiUrl).openConnection() as HttpURLConnection
+    conn.setRequestProperty("User-Agent", "CODE-IDE-Build/1.0")
+    conn.connectTimeout = 15_000
+    conn.readTimeout = 15_000
+    try {
+        val body = conn.inputStream.bufferedReader().readText()
+        // Find first release with tag starting with "bootstrap-"
+        val regex = Regex(""""tag_name"\s*:\s*"(bootstrap-[^"]+)"""")
+        val match = regex.find(body)
+        if (match != null) {
+            val tag = match.groupValues[1]
+            println("Found latest bootstrap release: $tag")
+            return tag
+        }
+    } catch (e: Exception) {
+        println("Warning: Could not fetch releases: ${e.message}")
+    } finally {
+        conn.disconnect()
+    }
+    // Fallback to known tag
+    return "bootstrap-2025.06.26"
+}
+
+val bootstrapVersion = findLatestBootstrapTag()
 val bootstrapChecksums = mapOf(
-    "aarch64" to "",  // Will be verified after download
+    "aarch64" to "",
     "arm" to ""
 )
 
@@ -30,7 +56,6 @@ val bootstrapFiles = bootstrapChecksums.map { (arch, _) ->
     val file = File(bootstrapDir, "bootstrap-${arch}.zip")
     val url = "https://github.com/Neo-Mods1/CODE-IDE-resources/releases/download/${bootstrapVersion}/bootstrap-${arch}.zip"
 
-    // Always re-download to get latest version
     if (file.exists()) file.delete()
 
     println("Downloading bootstrap-$arch from $url ...")

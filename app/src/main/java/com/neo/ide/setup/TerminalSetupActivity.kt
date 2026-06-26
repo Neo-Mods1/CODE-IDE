@@ -234,7 +234,7 @@ class TerminalSetupActivity : BaseActivity(), TerminalSessionClient {
         if (!homeDir.exists()) homeDir.mkdirs()
         val cwd = homeDir.absolutePath
         val environment = ShellEnvironment.buildEnvironment(this)
-        val session = TerminalSession(shell, cwd, environment, null, null, this)
+        val session = TerminalSession(shell, cwd, null, environment, null, this)
         session.mSessionName = "session_$sessionCounter"
         sessions.add(session)
         sessionAdapter.notifyDataSetChanged()
@@ -263,7 +263,12 @@ class TerminalSetupActivity : BaseActivity(), TerminalSessionClient {
     }
 
     private fun getShellPath(): String {
-        val shells = listOf("/data/data/com.termux/files/usr/bin/bash", "/system/bin/sh")
+        val prefixBin = File(filesDir.parentFile, "usr/bin")
+        val shells = listOf(
+            File(prefixBin, "bash").absolutePath,
+            File(prefixBin, "sh").absolutePath,
+            "/system/bin/sh"
+        )
         return shells.firstOrNull { File(it).exists() } ?: "/system/bin/sh"
     }
 

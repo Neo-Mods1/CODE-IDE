@@ -1,10 +1,3 @@
-/**
- *	(っ◔◡◔)っ ♥
- *
- *	Telegram Contact • @NeoModsDev
- *	Telegram Channel • https://t.me/NeoModsChannel
- */
-
 package com.neo.ide.onboarding
 
 import android.net.ConnectivityManager
@@ -37,6 +30,7 @@ class SetupConfigFragment : Fragment() {
     private lateinit var networkStatus: TextView
     private lateinit var sdkVersionDropdown: AutoCompleteTextView
     private lateinit var jdkVersionDropdown: AutoCompleteTextView
+    private lateinit var ndkVersionDropdown: AutoCompleteTextView
     private lateinit var installGitCheckBox: CheckBox
     private lateinit var installOpensshCheckBox: CheckBox
 
@@ -64,6 +58,7 @@ class SetupConfigFragment : Fragment() {
         networkStatus = view.findViewById(R.id.network_status)
         sdkVersionDropdown = view.findViewById(R.id.sdk_version_dropdown)
         jdkVersionDropdown = view.findViewById(R.id.jdk_version_dropdown)
+        ndkVersionDropdown = view.findViewById(R.id.ndk_version_dropdown)
         installGitCheckBox = view.findViewById(R.id.install_git_checkbox)
         installOpensshCheckBox = view.findViewById(R.id.install_openssh_checkbox)
 
@@ -87,7 +82,7 @@ class SetupConfigFragment : Fragment() {
         resourcesContainer.visibility = View.GONE
 
         scope.launch {
-            delay(500) // Brief loading animation
+            delay(500)
             manifestLoaded = true
             loadingContainer.visibility = View.GONE
             resourcesContainer.visibility = View.VISIBLE
@@ -96,17 +91,20 @@ class SetupConfigFragment : Fragment() {
     }
 
     private fun populateUI() {
-        // SDK versions — matches what's available in our manifest
         val sdkVersions = listOf("36", "35", "34", "33")
         val sdkAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, sdkVersions)
         sdkVersionDropdown.setAdapter(sdkAdapter)
         sdkVersionDropdown.setText(sdkVersions[0], false)
 
-        // JDK versions — 17 (stable) and 21 (experimental)
         val jdkVersions = listOf("JDK 17 (Stable)", "JDK 21 (Experimental)")
         val jdkAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, jdkVersions)
         jdkVersionDropdown.setAdapter(jdkAdapter)
         jdkVersionDropdown.setText(jdkVersions[0], false)
+
+        val ndkVersions = listOf("r27 (27.0.12077973)", "r26d (26.3.11579264)")
+        val ndkAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, ndkVersions)
+        ndkVersionDropdown.setAdapter(ndkAdapter)
+        ndkVersionDropdown.setText(ndkVersions[0], false)
     }
 
     fun getSelectedSdkVersion(): String {
@@ -121,16 +119,20 @@ class SetupConfigFragment : Fragment() {
         }
     }
 
+    fun getSelectedNdkVersion(): String {
+        val text = ndkVersionDropdown.text.toString()
+        return when {
+            text.contains("r26") -> "26.3.11579264"
+            else -> "27.0.12077973"
+        }
+    }
+
     fun isGitSelected(): Boolean = installGitCheckBox.isChecked
 
     fun isOpensshSelected(): Boolean = installOpensshCheckBox.isChecked
 
     fun isAutoInstall(): Boolean = autoInstallSwitch.isChecked
 
-    /**
-     * Build setup arguments for the idesetup.sh script.
-     * Returns an array of command-line arguments.
-     */
     fun buildSetupArguments(): Array<String> {
         val args = mutableListOf<String>()
 

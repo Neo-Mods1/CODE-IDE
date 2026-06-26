@@ -145,6 +145,30 @@
                     android:inputType="none" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <!-- NDK Version -->
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Android NDK"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurface"
+                android:layout_marginBottom="4dp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:hint="NDK Version"
+                android:layout_marginBottom="16dp">
+
+                <AutoCompleteTextView
+                    android:id="@+id/ndk_version_dropdown"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
+
             <!-- Optional packages -->
             <com.google.android.material.textview.MaterialTextView
                 android:layout_width="wrap_content"

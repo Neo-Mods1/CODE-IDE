@@ -101,7 +101,7 @@ class SetupConfigFragment : Fragment() {
         jdkVersionDropdown.setAdapter(jdkAdapter)
         jdkVersionDropdown.setText(jdkVersions[0], false)
 
-        val ndkVersions = listOf("r27 (27.0.12077973)", "r26d (26.3.11579264)")
+        val ndkVersions = listOf("Skip NDK", "r27 (27.0.12077973)", "r26d (26.3.11579264)")
         val ndkAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, ndkVersions)
         ndkVersionDropdown.setAdapter(ndkAdapter)
         ndkVersionDropdown.setText(ndkVersions[0], false)
@@ -119,9 +119,10 @@ class SetupConfigFragment : Fragment() {
         }
     }
 
-    fun getSelectedNdkVersion(): String {
+    fun getSelectedNdkVersion(): String? {
         val text = ndkVersionDropdown.text.toString()
         return when {
+            text.contains("Skip") -> null
             text.contains("r26") -> "26.3.11579264"
             else -> "27.0.12077973"
         }
@@ -144,6 +145,12 @@ class SetupConfigFragment : Fragment() {
 
         args.add("--jdk")
         args.add(getSelectedJdkVersion())
+
+        val ndkVersion = getSelectedNdkVersion()
+        if (ndkVersion != null) {
+            args.add("--ndk")
+            args.add(ndkVersion)
+        }
 
         args.add("--assume-yes")
 

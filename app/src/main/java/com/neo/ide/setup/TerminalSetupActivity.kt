@@ -1,3 +1,10 @@
+/**
+ *	(っ◔◡◔)っ ♥
+ *
+ *	Telegram Contact • @NeoModsDev
+ *	Telegram Channel • https://t.me/NeoModsChannel
+ */
+
 package com.neo.ide.setup
 
 import android.content.Intent
@@ -200,11 +207,14 @@ class TerminalSetupActivity : BaseActivity(), TerminalSessionClient {
 
         val environment = ShellEnvironment.buildEnvironment(this)
 
+        val args = intent.getStringArrayExtra(EXTRA_SETUP_ARGS) ?: emptyArray()
+        val commandArgs = arrayOf(script.absolutePath) + args
+
         val session = TerminalSession(
-            script.absolutePath,
+            shell,
             homeDir.absolutePath,
+            commandArgs,
             environment,
-            null,
             null,
             this
         )

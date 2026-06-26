@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # CODE-IDE Setup Script
-# Adapted from AndroidIDE's idesetup.sh
 # Downloads and installs SDK, build tools, JDK, and other components
 
 set -eu
@@ -20,6 +19,7 @@ manifest="https://raw.githubusercontent.com/Neo-Mods1/CODE-IDE-resources/main/ma
 assume_yes=false
 sdk_version="36"
 jdk_version="17"
+ndk_version=""
 with_git=false
 with_openssh=false
 
@@ -73,6 +73,7 @@ print_help() {
     echo "  -i, --install-dir    Installation directory (default: \$HOME)"
     echo "  -s, --sdk            Android SDK platform version (default: 36)"
     echo "  -j, --jdk            OpenJDK version: 17 or 21 (default: 17)"
+    echo "  -n, --ndk            Android NDK version (e.g. 27.0.12077973, or empty to skip)"
     echo "  -m, --manifest       Manifest URL"
     echo "  -g, --with-git       Install git"
     echo "  -o, --with-openssh   Install openssh"
@@ -174,6 +175,10 @@ while [ $# -gt 0 ]; do
         check_arg_value "--jdk" "${1:-}"
         jdk_version="$1"
         ;;
+    -n | --ndk)
+        shift
+        ndk_version="${1:-}"
+        ;;
     -m | --manifest)
         shift
         check_arg_value "--manifest" "${1:-}"
@@ -213,6 +218,11 @@ echo "------------------------------------------"
 echo "Installation directory : ${install_dir}"
 echo "SDK platform version   : ${sdk_version}"
 echo "JDK version            : ${jdk_version}"
+if [ -n "$ndk_version" ]; then
+    echo "NDK version            : ${ndk_version}"
+else
+    echo "NDK                    : Skip"
+fi
 echo "With git               : ${with_git}"
 echo "With openssh           : ${with_openssh}"
 echo "Manifest URL           : ${manifest}"
@@ -280,6 +290,16 @@ if [ -d "$install_dir/licenses-extract/licenses" ]; then
     cp -r "$install_dir/licenses-extract/licenses/"* "$install_dir/licenses/"
     rm -rf "$install_dir/licenses-extract"
     print_success "SDK Licenses installed"
+fi
+
+# 7. NDK (optional)
+if [ -n "$ndk_version" ]; then
+    print_info "Installing Android NDK r${ndk_version}..."
+    download_resource "Android NDK r${ndk_version}" "ndk" \
+        ".resources[] | select(.tag == \"ndk-r${ndk_version%%.*}\") | .url" \
+        "$install_dir/ndk/${ndk_version}"
+else
+    print_warn "Skipping NDK installation"
 fi
 
 # Install optional packages

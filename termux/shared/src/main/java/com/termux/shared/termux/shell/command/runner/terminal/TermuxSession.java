@@ -1,3 +1,10 @@
+/**
+ *	(っ◔◡◔)っ ♥
+ *
+ *	Telegram Contact • @NeoModsDev
+ *	Telegram Channel • https://t.me/NeoModsChannel
+ */
+
 package com.termux.shared.termux.shell.command.runner.terminal;
 
 import com.termux.shared.termux.shell.command.ExecutionCommand;

@@ -234,13 +234,14 @@ class TerminalActivity : BaseActivity(), TerminalSessionClient {
     }
 
     private fun getShellPath(): String {
-        val prefixBin = File(filesDir, "usr/bin")
-        val shells = listOf(
-            File(prefixBin, "bash").absolutePath,
-            File(prefixBin, "sh").absolutePath,
-            "/system/bin/sh"
-        )
-        return shells.firstOrNull { File(it).exists() } ?: "/system/bin/sh"
+        val prefixBin = File(TermuxInstaller.getPrefixPath(this), "bin")
+        val shells = listOf("login", "bash", "sh")
+        // Try each shell, prefer login shell like AndroidIDE
+        for (shell in shells) {
+            val f = File(prefixBin, shell)
+            if (f.exists() && f.canExecute()) return f.absolutePath
+        }
+        return "/system/bin/sh"
     }
 
     override fun onDestroy() {

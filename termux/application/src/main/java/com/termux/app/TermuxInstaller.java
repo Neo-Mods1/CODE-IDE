@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.os.Environment;
+import android.os.ParcelFileDescriptor;
 import android.system.Os;
 import android.util.Pair;
 import android.util.Log;
@@ -47,7 +48,7 @@ public final class TermuxInstaller {
     public static boolean isBootstrapInstalled(Context context) {
         File prefix = getPrefixDir(context);
         File bash = new File(prefix, "bin/bash");
-        return prefix.exists() && bash.exists() && prefix.list() != null && prefix.list().length > 0;
+        return prefix.exists() && bash.exists() && bash.canExecute() && prefix.list() != null && prefix.list().length > 0;
     }
 
     public interface SetupCallback {
@@ -105,9 +106,7 @@ public final class TermuxInstaller {
                 try (ZipInputStream zipInput = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
                     ZipEntry zipEntry;
                     while ((zipEntry = zipInput.getNextEntry()) != null) {
-                        String entryName = zipEntry.getName();
-
-                        if (entryName.equals("SYMLINKS.txt")) {
+                        if (zipEntry.getName().equals("SYMLINKS.txt")) {
                             BufferedReader symlinksReader = new BufferedReader(new InputStreamReader(zipInput));
                             String line;
                             while ((line = symlinksReader.readLine()) != null) {
@@ -116,41 +115,20 @@ public final class TermuxInstaller {
                                     Log.w(LOG_TAG, "Skipping malformed symlink line: " + line);
                                     continue;
                                 }
-                                String symlinkTarget = parts[0];
-                                String symlinkLink = parts[1];
+                                String oldPath = parts[0];
+                                String newPath = stagingDir.getAbsolutePath() + "/" + parts[1];
+                                symlinks.add(Pair.create(oldPath, newPath));
 
-                                // Rewrite symlink target: replace com.termux paths with our actual prefix path
-                                symlinkTarget = symlinkTarget
-                                    .replace("/data/data/com.termux/files/usr", prefixDir.getAbsolutePath())
-                                    .replace("/data/user/0/com.termux/files/usr", prefixDir.getAbsolutePath());
-
-                                // The link path from SYMLINKS.txt is relative like "bin/bash"
-                                // We need to resolve it relative to our staging dir
-                                File linkFile;
-                                if (symlinkLink.startsWith("usr/")) {
-                                    // Strip usr/ prefix since we extract directly into staging
-                                    linkFile = new File(stagingDir, symlinkLink.substring(4));
-                                } else {
-                                    linkFile = new File(stagingDir, symlinkLink);
-                                }
-
-                                symlinks.add(Pair.create(symlinkTarget, linkFile.getAbsolutePath()));
-
-                                File parent = linkFile.getParentFile();
+                                File parent = new File(newPath).getParentFile();
                                 if (parent != null && !parent.exists() && !parent.mkdirs()) {
                                     throw new RuntimeException("Failed to create directory: " + parent.getAbsolutePath());
                                 }
                             }
                         } else {
-                            // Strip "usr/" prefix from ZIP entries since we extract directly into staging
-                            // ZIP entries look like: "usr/bin/bash", "usr/lib/libfoo.so", etc.
-                            if (entryName.startsWith("usr/")) {
-                                entryName = entryName.substring(4);
-                            }
-                            // Skip empty entries (just "usr/" directory itself)
-                            if (entryName.isEmpty()) continue;
-
-                            File targetFile = new File(stagingDir, entryName);
+                            // ZIP entries do NOT have usr/ prefix
+                            // They are flat: bin/bash, lib/libfoo.so, etc.
+                            String zipEntryName = zipEntry.getName();
+                            File targetFile = new File(stagingDir, zipEntryName);
                             boolean isDirectory = zipEntry.isDirectory();
 
                             File parentDir = isDirectory ? targetFile : targetFile.getParentFile();
@@ -166,6 +144,15 @@ public final class TermuxInstaller {
                                     while ((readBytes = zipInput.read(buffer)) != -1)
                                         outStream.write(buffer, 0, readBytes);
                                 }
+                                // Set executable permissions on binaries — match AndroidIDE exactly
+                                if (zipEntryName.startsWith("bin/") || zipEntryName.startsWith("libexec") ||
+                                    zipEntryName.startsWith("lib/apt/apt-helper") || zipEntryName.startsWith("lib/apt/methods")) {
+                                    //noinspection OctalInteger
+                                    Os.chmod(targetFile.getAbsolutePath(), 0700);
+                                }
+                                // Also use File API as fallback for all files
+                                targetFile.setReadable(true, false);
+                                targetFile.setExecutable(true, false);
                             }
                         }
                     }
@@ -184,23 +171,26 @@ public final class TermuxInstaller {
                     }
                 }
 
-                // Use system chmod to set permissions — more reliable than Os.chmod on Android
-                String[] chmodTargets = {"bin", "lib", "libexec", "share"};
-                for (String target : chmodTargets) {
-                    File dir = new File(stagingDir, target);
-                    if (dir.exists()) {
-                        Process p = Runtime.getRuntime().exec(
-                            new String[]{"/system/bin/chmod", "-R", "755", dir.getAbsolutePath()});
-                        p.waitFor();
-                    }
-                }
+                // Ensure bin/ executables are definitely executable
+                ensureExecutable(new File(stagingDir, "bin"));
+                ensureExecutable(new File(stagingDir, "libexec"));
 
                 // Move staging to final — delete old prefix first
                 deleteRecursive(prefixDir);
                 if (!stagingDir.renameTo(prefixDir)) {
-                    // Rename failed (cross-device?), fall back to copy
-                    copyRecursive(stagingDir, prefixDir);
-                    deleteRecursive(stagingDir);
+                    throw new RuntimeException("Failed to move staging to prefix directory");
+                }
+
+                // Final verification: ensure bash is executable in the final location
+                File bashInPrefix = new File(prefixDir, "bin/bash");
+                if (!bashInPrefix.canExecute()) {
+                    Log.w(LOG_TAG, "bash not executable after install, retrying chmod");
+                    //noinspection OctalInteger
+                    Os.chmod(bashInPrefix.getAbsolutePath(), 0700);
+                    bashInPrefix.setExecutable(true, false);
+                    if (!bashInPrefix.canExecute()) {
+                        throw new RuntimeException("bash is not executable after chmod: " + bashInPrefix.getAbsolutePath());
+                    }
                 }
 
                 Log.i(LOG_TAG, "Bootstrap installed successfully to " + prefixDir.getAbsolutePath());
@@ -220,24 +210,19 @@ public final class TermuxInstaller {
         }).start();
     }
 
-    private static void chmodRecursive(File dir, int mode) {
-        if (!dir.exists()) return;
-        if (dir.isDirectory()) {
-            //noinspection OctalInteger
-            dir.setExecutable(true, true);
-            dir.setReadable(true, true);
-            File[] children = dir.listFiles();
-            if (children != null) {
-                for (File child : children) {
-                    chmodRecursive(child, mode);
+    private static void ensureExecutable(File dir) {
+        if (!dir.exists() || !dir.isDirectory()) return;
+        File[] children = dir.listFiles();
+        if (children == null) return;
+        for (File child : children) {
+            if (child.isFile() && !child.getName().contains(".")) {
+                // Binary without extension — ensure executable
+                try {
+                    //noinspection OctalInteger
+                    Os.chmod(child.getAbsolutePath(), 0700);
+                } catch (Exception e) {
+                    child.setExecutable(true, false);
                 }
-            }
-        } else {
-            try {
-                //noinspection OctalInteger
-                Os.chmod(dir.getAbsolutePath(), mode);
-            } catch (Exception e) {
-                // Ignore chmod errors on individual files
             }
         }
     }
@@ -253,26 +238,6 @@ public final class TermuxInstaller {
             }
         }
         file.delete();
-    }
-
-    private static void copyRecursive(File src, File dest) throws Exception {
-        if (src.isDirectory()) {
-            dest.mkdirs();
-            File[] children = src.listFiles();
-            if (children != null) {
-                for (File child : children) {
-                    copyRecursive(child, new File(dest, child.getName()));
-                }
-            }
-        } else {
-            java.io.FileInputStream in = new java.io.FileInputStream(src);
-            java.io.FileOutputStream out = new java.io.FileOutputStream(dest);
-            byte[] buf = new byte[8192];
-            int len;
-            while ((len = in.read(buf)) > 0) out.write(buf, 0, len);
-            in.close();
-            out.close();
-        }
     }
 
     static void setupStorageSymlinks(final Context context) {

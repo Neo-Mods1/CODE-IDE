@@ -7,10 +7,10 @@
 
 package com.neo.ide
 
-import android.app.Application
+import com.neo.ide.app.BaseApplication
 import com.neo.ide.crash.CrashHandler
 
-class App : Application() {
+class App : BaseApplication() {
 
     override fun onCreate() {
         super.onCreate()

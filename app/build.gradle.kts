@@ -105,4 +105,5 @@ dependencies {
     implementation("org.json:json:20231013")
     implementation(project(":termux:view"))
     implementation(project(":termux:shared"))
+    implementation(project(":termux:application"))
 }

@@ -106,7 +106,7 @@ public class TermuxService extends Service {
         mTermuxTerminalSessionActivityClient = client;
         // Update all existing sessions' clients
         for (TermuxSession session : mTermuxSessions) {
-            session.getTerminalSession().setTerminalSessionClient(
+            session.getTerminalSession().updateTerminalSessionClient(
                 client != null ? client : mTermuxTerminalSessionServiceClient
             );
         }

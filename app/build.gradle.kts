@@ -56,20 +56,48 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            if (signingFromEnv) {
-                val ksFile = File(projectDir, "release-key-env.jks")
-                val decoded = Base64.getDecoder().decode(System.getenv("KEYSTORE_BASE64"))
-                ksFile.writeBytes(decoded)
-                storeFile = ksFile
-                storePassword = System.getenv("KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("KEY_ALIAS")
-                keyPassword = System.getenv("KEY_PASSWORD")
-            } else if (keystorePropertiesFile.exists()) {
-                storeFile = file(keystoreProperties["storeFile"] as String)
-                storePassword = keystoreProperties["storePassword"] as String
-                keyAlias = keystoreProperties["keyAlias"] as String
-                keyPassword = keystoreProperties["keyPassword"] as String
+        create("appSigning") {
+            // Priority: 1) CI env vars 2) local properties file 3) generated debug keystore
+            when {
+                signingFromEnv -> {
+                    val ksFile = File(projectDir, "release-key-env.jks")
+                    val decoded = Base64.getDecoder().decode(System.getenv("KEYSTORE_BASE64"))
+                    ksFile.writeBytes(decoded)
+                    storeFile = ksFile
+                    storePassword = System.getenv("KEYSTORE_PASSWORD")
+                    keyAlias = System.getenv("KEY_ALIAS")
+                    keyPassword = System.getenv("KEY_PASSWORD")
+                }
+                keystorePropertiesFile.exists() -> {
+                    storeFile = file(keystoreProperties["storeFile"] as String)
+                    storePassword = keystoreProperties["storePassword"] as String
+                    keyAlias = keystoreProperties["keyAlias"] as String
+                    keyPassword = keystoreProperties["keyPassword"] as String
+                }
+                else -> {
+                    // Generate a debug keystore for local/CI builds without a release key
+                    val debugKs = File(projectDir, "app/build/debug-keystore.jks")
+                    if (!debugKs.exists()) {
+                        debugKs.parentFile.mkdirs()
+                        project.exec {
+                            commandLine(
+                                "keytool", "-genkeypair",
+                                "-alias", "debug",
+                                "-keyalg", "RSA",
+                                "-keysize", "2048",
+                                "-validity", "10000",
+                                "-keystore", debugKs.absolutePath,
+                                "-storepass", "android",
+                                "-keypass", "android",
+                                "-dname", "CN=Debug,OU=Debug,O=Debug,L=Debug,ST=Debug,C=US"
+                            )
+                        }
+                    }
+                    storeFile = debugKs
+                    storePassword = "android"
+                    keyAlias = "debug"
+                    keyPassword = "android"
+                }
             }
         }
     }
@@ -104,7 +132,7 @@ android {
             isShrinkResources = true
             isJniDebuggable = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.findByName("release")
+            signingConfig = signingConfigs.findByName("appSigning")
         }
         debug {
             isMinifyEnabled = true
@@ -112,7 +140,7 @@ android {
             isJniDebuggable = false
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
-            signingConfig = signingConfigs.findByName("release")
+            signingConfig = signingConfigs.findByName("appSigning")
         }
     }
 }

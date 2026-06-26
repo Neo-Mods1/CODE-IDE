@@ -71,28 +71,37 @@ class TerminalActivity : BaseActivity(), TerminalSessionClient {
         extraKeysView = findViewById(R.id.extra_keys_view)
         extraKeysView.setExtraKeysViewClient(object : ExtraKeysView.IExtraKeysView {
             override fun onExtraKeyButtonClick(view: View, buttonInfo: ExtraKeyButton, button: com.google.android.material.button.MaterialButton) {
-                val key = buttonInfo.key
                 val session = currentSession ?: return
-                val keyCode = ExtraKeysConstants.PRIMARY_KEY_CODES_FOR_STRINGS[key]
-                if (keyCode != null) {
-                    val isCtrl = extraKeysView.readSpecialButton(SpecialButton.CTRL, false) ?: false
-                    val isAlt = extraKeysView.readSpecialButton(SpecialButton.ALT, false) ?: false
-                    var modifiers = 0
-                    if (isCtrl) modifiers = modifiers or KeyEvent.META_CTRL_ON
-                    if (isAlt) modifiers = modifiers or KeyEvent.META_ALT_ON
-                    val downEvent = KeyEvent(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), KeyEvent.ACTION_DOWN, keyCode, 0)
-                    terminalView.dispatchKeyEvent(downEvent)
-                    val upEvent = KeyEvent(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, keyCode, modifiers)
-                    terminalView.dispatchKeyEvent(upEvent)
-                } else if (key.length == 1) {
-                    session.write(key.toByteArray(), 0, key.toByteArray().size)
+                val key = buttonInfo.key
+                val isCtrl = extraKeysView.readSpecialButton(SpecialButton.CTRL, false) ?: false
+                val isAlt = extraKeysView.readSpecialButton(SpecialButton.ALT, false) ?: false
+                val isShift = extraKeysView.readSpecialButton(SpecialButton.SHIFT, false) ?: false
+                val isFn = extraKeysView.readSpecialButton(SpecialButton.FN, false) ?: false
+
+                if (buttonInfo.isMacro) {
+                    // Handle macro sequences like "CTRL c" or "CTRL d"
+                    var ctrl = isCtrl; var alt = isAlt; var shift = isShift; var fn = isFn
+                    for (token in key.split(" ")) {
+                        when (token) {
+                            "CTRL" -> ctrl = true
+                            "ALT" -> alt = true
+                            "SHIFT" -> shift = true
+                            "FN" -> fn = true
+                            else -> {
+                                sendKeyWithModifiers(token, ctrl, alt, shift, fn)
+                                ctrl = isCtrl; alt = isAlt; shift = isShift; fn = isFn
+                            }
+                        }
+                    }
+                } else {
+                    sendKeyWithModifiers(key, isCtrl, isAlt, isShift, isFn)
                 }
             }
             override fun performExtraKeyButtonHapticFeedback(view: View, buttonInfo: ExtraKeyButton, button: com.google.android.material.button.MaterialButton) = false
         })
 
         try {
-            val configJson = "[[\"ESC\",\"/\",\"-\",\"HOME\",\"UP\",\"END\",\"PGUP\"],[\"TAB\",\"CTRL\",\"ALT\",\"LEFT\",\"DOWN\",\"RIGHT\",\"PGDN\"]]"
+            val configJson = "[[\"ESC\",\"/\",\"-\",\"HOME\",\"UP\",\"END\",\"PGUP\",\"BKSP\"],[\"TAB\",\"CTRL\",\"ALT\",\"LEFT\",\"DOWN\",\"RIGHT\",\"PGDN\",\"DEL\"]]"
             val extraKeysInfo = ExtraKeysInfo(configJson, "default", ExtraKeysConstants.CONTROL_CHARS_ALIASES)
             extraKeysView.setButtonColors(
                 0xFFFFFFFF.toInt(),
@@ -195,6 +204,28 @@ class TerminalActivity : BaseActivity(), TerminalSessionClient {
                     finish()
                 }
             })
+        }
+    }
+
+    private fun sendKeyWithModifiers(key: String, ctrl: Boolean, alt: Boolean, shift: Boolean, fn: Boolean) {
+        val session = currentSession ?: return
+        val keyCode = ExtraKeysConstants.PRIMARY_KEY_CODES_FOR_STRINGS[key]
+        if (keyCode != null) {
+            var metaState = 0
+            if (ctrl) metaState = metaState or KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON
+            if (alt) metaState = metaState or KeyEvent.META_ALT_ON or KeyEvent.META_ALT_LEFT_ON
+            if (shift) metaState = metaState or KeyEvent.META_SHIFT_ON or KeyEvent.META_SHIFT_LEFT_ON
+            if (fn) metaState = metaState or KeyEvent.META_FUNCTION_ON
+            val downEvent = KeyEvent(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), KeyEvent.ACTION_DOWN, keyCode, 0, metaState)
+            terminalView.dispatchKeyEvent(downEvent)
+            val upEvent = KeyEvent(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, keyCode, 0, metaState)
+            terminalView.dispatchKeyEvent(upEvent)
+        } else if (key.length == 1) {
+            val bytes = key.toByteArray(Charsets.UTF_8)
+            session.write(bytes, 0, bytes.size)
+        } else if (key == "KEYBOARD") {
+            val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+            imm.toggleSoftInput(0, 0)
         }
     }
 

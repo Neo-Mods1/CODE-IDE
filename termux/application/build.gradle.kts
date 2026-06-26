@@ -84,7 +84,7 @@ android {
         minSdk = v.getProperty("minSdk").toInt()
 
         buildConfigField("String", "TERMUX_PACKAGE_VARIANT", "\"apt-android-7\"")
-        manifestPlaceholders["TERMUX_PACKAGE_NAME"] = "com.termux"
+        manifestPlaceholders["TERMUX_PACKAGE_NAME"] = "com.neo.ide"
 
         ndk {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a")

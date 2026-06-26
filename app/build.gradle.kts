@@ -1,4 +1,3 @@
-import java.util.Base64
 import java.io.File
 import java.util.Properties
 
@@ -16,8 +15,6 @@ val keystoreProperties = Properties()
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(keystorePropertiesFile.inputStream())
 }
-
-val signingFromEnv = !System.getenv("KEYSTORE_BASE64").isNullOrEmpty()
 
 android {
     namespace = "com.neo.ide"
@@ -57,47 +54,34 @@ android {
 
     signingConfigs {
         create("appSigning") {
-            // Priority: 1) CI env vars 2) local properties file 3) generated debug keystore
-            when {
-                signingFromEnv -> {
-                    val ksFile = File(projectDir, "release-key-env.jks")
-                    val decoded = Base64.getDecoder().decode(System.getenv("KEYSTORE_BASE64"))
-                    ksFile.writeBytes(decoded)
-                    storeFile = ksFile
-                    storePassword = System.getenv("KEYSTORE_PASSWORD")
-                    keyAlias = System.getenv("KEY_ALIAS")
-                    keyPassword = System.getenv("KEY_PASSWORD")
-                }
-                keystorePropertiesFile.exists() -> {
-                    storeFile = file(keystoreProperties["storeFile"] as String)
-                    storePassword = keystoreProperties["storePassword"] as String
-                    keyAlias = keystoreProperties["keyAlias"] as String
-                    keyPassword = keystoreProperties["keyPassword"] as String
-                }
-                else -> {
-                    // Generate a debug keystore for local/CI builds without a release key
-                    val debugKs = File(projectDir, "app/build/debug-keystore.jks")
-                    if (!debugKs.exists()) {
-                        debugKs.parentFile.mkdirs()
-                        project.exec {
-                            commandLine(
-                                "keytool", "-genkeypair",
-                                "-alias", "debug",
-                                "-keyalg", "RSA",
-                                "-keysize", "2048",
-                                "-validity", "10000",
-                                "-keystore", debugKs.absolutePath,
-                                "-storepass", "android",
-                                "-keypass", "android",
-                                "-dname", "CN=Debug,OU=Debug,O=Debug,L=Debug,ST=Debug,C=US"
-                            )
-                        }
+            if (keystorePropertiesFile.exists()) {
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+            } else {
+                // Generate a debug keystore for builds without a release key
+                val debugKs = File(projectDir, "app/build/debug-keystore.jks")
+                if (!debugKs.exists()) {
+                    debugKs.parentFile.mkdirs()
+                    project.exec {
+                        commandLine(
+                            "keytool", "-genkeypair",
+                            "-alias", "debug",
+                            "-keyalg", "RSA",
+                            "-keysize", "2048",
+                            "-validity", "10000",
+                            "-keystore", debugKs.absolutePath,
+                            "-storepass", "android",
+                            "-keypass", "android",
+                            "-dname", "CN=Debug,OU=Debug,O=Debug,L=Debug,ST=Debug,C=US"
+                        )
                     }
-                    storeFile = debugKs
-                    storePassword = "android"
-                    keyAlias = "debug"
-                    keyPassword = "android"
                 }
+                storeFile = debugKs
+                storePassword = "android"
+                keyAlias = "debug"
+                keyPassword = "android"
             }
         }
     }

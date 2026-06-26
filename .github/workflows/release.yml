@@ -39,11 +39,6 @@ jobs:
     - name: Build Release APKs (arm64 + arm)
       id: build
       continue-on-error: true
-      env:
-        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
       run: |
         ./gradlew assembleRelease --stacktrace 2>&1 | tee build_output.log
         echo "build_status=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT

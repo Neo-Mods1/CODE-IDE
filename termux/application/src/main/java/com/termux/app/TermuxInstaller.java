@@ -166,8 +166,6 @@ public final class TermuxInstaller {
                                     while ((readBytes = zipInput.read(buffer)) != -1)
                                         outStream.write(buffer, 0, readBytes);
                                 }
-                                //noinspection OctalInteger
-                                Os.chmod(targetFile.getAbsolutePath(), 0700);
                             }
                         }
                     }
@@ -186,10 +184,16 @@ public final class TermuxInstaller {
                     }
                 }
 
-                // Ensure all bin/ and lib/ executables have correct permissions
-                chmodRecursive(new File(stagingDir, "bin"), 0700);
-                chmodRecursive(new File(stagingDir, "lib"), 0700);
-                chmodRecursive(new File(stagingDir, "libexec"), 0700);
+                // Use system chmod to set permissions — more reliable than Os.chmod on Android
+                String[] chmodTargets = {"bin", "lib", "libexec", "share"};
+                for (String target : chmodTargets) {
+                    File dir = new File(stagingDir, target);
+                    if (dir.exists()) {
+                        Process p = Runtime.getRuntime().exec(
+                            new String[]{"/system/bin/chmod", "-R", "755", dir.getAbsolutePath()});
+                        p.waitFor();
+                    }
+                }
 
                 // Move staging to final — delete old prefix first
                 deleteRecursive(prefixDir);

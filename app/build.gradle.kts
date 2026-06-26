@@ -59,6 +59,7 @@ android {
     }
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -106,4 +107,5 @@ dependencies {
     implementation(project(":termux:view"))
     implementation(project(":termux:shared"))
     implementation(project(":termux:application"))
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:1.1.5")
 }

@@ -396,16 +396,25 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
         if (mTermuxService.isTermuxSessionsEmpty()) {
             if (mIsVisible) {
-                TermuxInstaller.setupBootstrapIfNeeded(TermuxActivity.this, () -> {
-                    if (mTermuxService == null) return; // Activity might have been destroyed.
-                    try {
-                        boolean launchFailsafe = false;
-                        if (intent != null && intent.getExtras() != null) {
-                            launchFailsafe = intent.getExtras().getBoolean(TERMUX_ACTIVITY.EXTRA_FAILSAFE_SESSION, false);
+                TermuxInstaller.setupBootstrapIfNeeded(TermuxActivity.this, new TermuxInstaller.SetupCallback() {
+                    @Override
+                    public void onSuccess() {
+                        if (mTermuxService == null) return;
+                        try {
+                            boolean launchFailsafe = false;
+                            if (intent != null && intent.getExtras() != null) {
+                                launchFailsafe = intent.getExtras().getBoolean(TERMUX_ACTIVITY.EXTRA_FAILSAFE_SESSION, false);
+                            }
+                            mTermuxTerminalSessionActivityClient.addNewSession(launchFailsafe, null);
+                        } catch (WindowManager.BadTokenException e) {
+                            // Activity finished - ignore.
                         }
-                        mTermuxTerminalSessionActivityClient.addNewSession(launchFailsafe, null);
-                    } catch (WindowManager.BadTokenException e) {
-                        // Activity finished - ignore.
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        // Bootstrap failed - finish activity
+                        finishActivityIfNotFinishing();
                     }
                 });
             } else {

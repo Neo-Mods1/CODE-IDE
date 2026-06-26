@@ -75,8 +75,15 @@ class TerminalActivity : BaseActivity(), TerminalSessionClient {
                 val session = currentSession ?: return
                 val keyCode = ExtraKeysConstants.PRIMARY_KEY_CODES_FOR_STRINGS[key]
                 if (keyCode != null) {
-                    val event = KeyEvent(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, keyCode, 0)
-                    terminalView.onKeyDown(keyCode, event)
+                    val isCtrl = extraKeysView.readSpecialButton(SpecialButton.CTRL, false) ?: false
+                    val isAlt = extraKeysView.readSpecialButton(SpecialButton.ALT, false) ?: false
+                    var modifiers = 0
+                    if (isCtrl) modifiers = modifiers or KeyEvent.META_CTRL_ON
+                    if (isAlt) modifiers = modifiers or KeyEvent.META_ALT_ON
+                    val downEvent = KeyEvent(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), KeyEvent.ACTION_DOWN, keyCode, 0)
+                    terminalView.dispatchKeyEvent(downEvent)
+                    val upEvent = KeyEvent(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, keyCode, modifiers)
+                    terminalView.dispatchKeyEvent(upEvent)
                 } else if (key.length == 1) {
                     session.write(key.toByteArray(), 0, key.toByteArray().size)
                 }

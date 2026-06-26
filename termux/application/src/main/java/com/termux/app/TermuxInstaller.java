@@ -1,14 +1,8 @@
-/**
- *	(っ◔◡◔)っ ♥
- *
- *	Telegram Contact • @NeoModsDev
- *	Telegram Channel • https://t.me/NeoModsChannel
- */
-
 package com.termux.app;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
 import android.os.Build;
 import android.os.Environment;
@@ -49,19 +43,20 @@ public final class TermuxInstaller {
     }
 
     public static void setupBootstrapIfNeeded(final Activity activity, final SetupCallback callback) {
-        // If prefix already exists and has content, skip
         if (isBootstrapInstalled()) {
             callback.onSuccess();
             return;
         }
 
+        final Dialog[] progressDialog = new Dialog[1];
         activity.runOnUiThread(() -> {
             try {
-                new AlertDialog.Builder(activity)
+                progressDialog[0] = new AlertDialog.Builder(activity)
                     .setTitle("Installing")
                     .setMessage("Installing bootstrap packages...")
                     .setCancelable(false)
-                    .show();
+                    .create();
+                progressDialog[0].show();
             } catch (WindowManager.BadTokenException e) {
                 // Activity dismissed
             }
@@ -81,7 +76,6 @@ public final class TermuxInstaller {
                 File prefixDir = new File(TERMUX_PREFIX_DIR_PATH);
                 prefixDir.mkdirs();
 
-                // Load and extract bootstrap zip
                 final byte[] buffer = new byte[8192];
                 final List<Pair<String, String>> symlinks = new ArrayList<>(50);
 
@@ -117,11 +111,8 @@ public final class TermuxInstaller {
                                     while ((readBytes = zipInput.read(buffer)) != -1)
                                         outStream.write(buffer, 0, readBytes);
                                 }
-                                if (zipEntryName.startsWith("bin/") || zipEntryName.startsWith("libexec") ||
-                                    zipEntryName.startsWith("lib/apt/apt-helper") || zipEntryName.startsWith("lib/apt/methods")) {
-                                    //noinspection OctalInteger
-                                    Os.chmod(targetFile.getAbsolutePath(), 0700);
-                                }
+                                //noinspection OctalInteger
+                                Os.chmod(targetFile.getAbsolutePath(), 0700);
                             }
                         }
                     }
@@ -133,20 +124,52 @@ public final class TermuxInstaller {
                     Os.symlink(symlink.first, symlink.second);
                 }
 
+                // Ensure all bin/ and lib/ executables have correct permissions
+                chmodRecursive(new File(TERMUX_STAGING_PREFIX_DIR_PATH, "bin"), 0700);
+                chmodRecursive(new File(TERMUX_STAGING_PREFIX_DIR_PATH, "lib"), 0700);
+                chmodRecursive(new File(TERMUX_STAGING_PREFIX_DIR_PATH, "libexec"), 0700);
+
                 // Move staging to final
                 if (!TERMUX_STAGING_PREFIX_DIR.renameTo(TERMUX_PREFIX_DIR)) {
-                    // Fallback: copy files if rename fails (different filesystem)
                     copyRecursive(new File(TERMUX_STAGING_PREFIX_DIR_PATH), new File(TERMUX_PREFIX_DIR_PATH));
                     deleteRecursive(new File(TERMUX_STAGING_PREFIX_DIR_PATH));
                 }
 
-                activity.runOnUiThread(() -> callback.onSuccess());
+                activity.runOnUiThread(() -> {
+                    try { progressDialog[0].dismiss(); } catch (Exception ignored) {}
+                    callback.onSuccess();
+                });
 
             } catch (final Exception e) {
                 String msg = e.getMessage() != null ? e.getMessage() : e.toString();
-                activity.runOnUiThread(() -> callback.onError(msg));
+                activity.runOnUiThread(() -> {
+                    try { progressDialog[0].dismiss(); } catch (Exception ignored) {}
+                    callback.onError(msg);
+                });
             }
         }).start();
+    }
+
+    private static void chmodRecursive(File dir, int mode) {
+        if (!dir.exists()) return;
+        if (dir.isDirectory()) {
+            //noinspection OctalInteger
+            dir.setExecutable(true, true);
+            dir.setReadable(true, true);
+            File[] children = dir.listFiles();
+            if (children != null) {
+                for (File child : children) {
+                    chmodRecursive(child, mode);
+                }
+            }
+        } else {
+            try {
+                //noinspection OctalInteger
+                Os.chmod(dir.getAbsolutePath(), mode);
+            } catch (Exception e) {
+                // Ignore chmod errors on individual files
+            }
+        }
     }
 
     private static void deleteRecursive(File file) {
@@ -188,23 +211,18 @@ public final class TermuxInstaller {
                 if (storageDir.exists()) deleteRecursive(storageDir);
                 storageDir.mkdirs();
 
-                File sharedDir = Environment.getExternalStorageDirectory();
-                Os.symlink(sharedDir.getAbsolutePath(), new File(storageDir, "shared").getAbsolutePath());
-
-                File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-                Os.symlink(downloadsDir.getAbsolutePath(), new File(storageDir, "downloads").getAbsolutePath());
-
-                File dcimDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
-                Os.symlink(dcimDir.getAbsolutePath(), new File(storageDir, "dcim").getAbsolutePath());
-
-                File picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-                Os.symlink(picturesDir.getAbsolutePath(), new File(storageDir, "pictures").getAbsolutePath());
-
-                File musicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC);
-                Os.symlink(musicDir.getAbsolutePath(), new File(storageDir, "music").getAbsolutePath());
-
-                File moviesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES);
-                Os.symlink(moviesDir.getAbsolutePath(), new File(storageDir, "movies").getAbsolutePath());
+                Os.symlink(Environment.getExternalStorageDirectory().getAbsolutePath(),
+                    new File(storageDir, "shared").getAbsolutePath());
+                Os.symlink(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath(),
+                    new File(storageDir, "downloads").getAbsolutePath());
+                Os.symlink(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getAbsolutePath(),
+                    new File(storageDir, "dcim").getAbsolutePath());
+                Os.symlink(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath(),
+                    new File(storageDir, "pictures").getAbsolutePath());
+                Os.symlink(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC).getAbsolutePath(),
+                    new File(storageDir, "music").getAbsolutePath());
+                Os.symlink(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES).getAbsolutePath(),
+                    new File(storageDir, "movies").getAbsolutePath());
             } catch (Exception e) {
                 e.printStackTrace();
             }

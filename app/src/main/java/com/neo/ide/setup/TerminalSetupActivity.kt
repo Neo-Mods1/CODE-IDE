@@ -1,10 +1,3 @@
-/**
- *	(っ◔◡◔)っ ♥
- *
- *	Telegram Contact • @NeoModsDev
- *	Telegram Channel • https://t.me/NeoModsChannel
- */
-
 package com.neo.ide.setup
 
 import android.content.Intent
@@ -28,6 +21,7 @@ import com.neo.ide.R
 import com.neo.ide.activities.HomeActivity
 import com.neo.ide.app.BaseActivity
 import com.neo.ide.download.SetupState
+import com.termux.app.TermuxInstaller
 import com.termux.shared.termux.extrakeys.ExtraKeysView
 import com.termux.shared.termux.extrakeys.ExtraKeysConstants
 import com.termux.shared.termux.extrakeys.ExtraKeysInfo
@@ -95,7 +89,7 @@ class TerminalSetupActivity : BaseActivity(), TerminalSessionClient {
                     val event = KeyEvent(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, keyCode, 0)
                     terminalView.onKeyDown(keyCode, event)
                 } else if (key.length == 1) {
-                    session.write(key)
+                    session.write(key.toByteArray(), 0, key.toByteArray().size)
                 }
             }
             override fun performExtraKeyButtonHapticFeedback(view: View, buttonInfo: ExtraKeyButton, button: com.google.android.material.button.MaterialButton) = false
@@ -190,7 +184,25 @@ class TerminalSetupActivity : BaseActivity(), TerminalSessionClient {
 
         TerminalService.start(this)
         ShellEnvironment.ensureDirectories(this)
-        createSessionAndRunSetup()
+
+        // Step 1: Install bootstrap packages (extracts prefix with bash, curl, tar, etc.)
+        // Step 2: Then run the IDE setup script
+        installBootstrapAndRunSetup()
+    }
+
+    private fun installBootstrapAndRunSetup() {
+        TermuxInstaller.setupBootstrapIfNeeded(this, object : TermuxInstaller.SetupCallback {
+            override fun onSuccess() {
+                // Bootstrap installed — now run the setup script
+                ShellEnvironment.ensureDirectories(this@TerminalSetupActivity)
+                createSessionAndRunSetup()
+            }
+
+            override fun onError(message: String) {
+                Toast.makeText(this@TerminalSetupActivity, "Bootstrap failed: $message", Toast.LENGTH_LONG).show()
+                finish()
+            }
+        })
     }
 
     private fun createSessionAndRunSetup() {
@@ -263,7 +275,8 @@ class TerminalSetupActivity : BaseActivity(), TerminalSessionClient {
     }
 
     private fun getShellPath(): String {
-        val prefixBin = File(filesDir.parentFile, "usr/bin")
+        // After bootstrap, $PREFIX/bin/bash exists
+        val prefixBin = File(filesDir, "usr/bin")
         val shells = listOf(
             File(prefixBin, "bash").absolutePath,
             File(prefixBin, "sh").absolutePath,

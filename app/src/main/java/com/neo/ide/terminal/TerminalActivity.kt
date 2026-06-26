@@ -27,6 +27,7 @@ import com.neo.ide.R
 import com.neo.ide.app.BaseActivity
 import com.neo.ide.setup.ShellEnvironment
 import com.neo.ide.setup.TerminalService
+import com.termux.app.TermuxInstaller
 import com.termux.shared.termux.extrakeys.ExtraKeysView
 import com.termux.shared.termux.extrakeys.ExtraKeysConstants
 import com.termux.shared.termux.extrakeys.ExtraKeysInfo
@@ -172,7 +173,22 @@ class TerminalActivity : BaseActivity(), TerminalSessionClient {
 
         TerminalService.start(this)
         ShellEnvironment.ensureDirectories(this)
-        createNewSession()
+
+        // Install bootstrap if needed, then create session
+        if (TermuxInstaller.isBootstrapInstalled()) {
+            createNewSession()
+        } else {
+            TermuxInstaller.setupBootstrapIfNeeded(this, object : TermuxInstaller.SetupCallback {
+                override fun onSuccess() {
+                    ShellEnvironment.ensureDirectories(this@TerminalActivity)
+                    createNewSession()
+                }
+                override fun onError(message: String) {
+                    Toast.makeText(this@TerminalActivity, "Bootstrap failed: $message", Toast.LENGTH_LONG).show()
+                    finish()
+                }
+            })
+        }
     }
 
     private fun createNewSession(): TerminalSession {
@@ -211,7 +227,7 @@ class TerminalActivity : BaseActivity(), TerminalSessionClient {
     }
 
     private fun getShellPath(): String {
-        val prefixBin = File(filesDir.parentFile, "usr/bin")
+        val prefixBin = File(filesDir, "usr/bin")
         val shells = listOf(
             File(prefixBin, "bash").absolutePath,
             File(prefixBin, "sh").absolutePath,

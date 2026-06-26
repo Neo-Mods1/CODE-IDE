@@ -21,12 +21,8 @@ class OnboardingActivity : BaseActivity() {
     private lateinit var skipBtn: TextView
     private lateinit var pageIndicator: TextView
 
-    private val greetingFragment = GreetingFragment()
-    private val statisticsFragment = StatisticsFragment()
-    private val permissionsFragment = PermissionsFragment()
-    private val setupConfigFragment = SetupConfigFragment()
-
-    private val fragments = listOf(greetingFragment, statisticsFragment, permissionsFragment, setupConfigFragment)
+    private val allFragments = mutableMapOf<String, Fragment>()
+    private var activeFragments = listOf<Fragment>()
 
     override fun bindLayout(): View {
         return layoutInflater.inflate(R.layout.activity_onboarding, null)
@@ -40,9 +36,11 @@ class OnboardingActivity : BaseActivity() {
         skipBtn = findViewById(R.id.onboarding_skip_btn)
         pageIndicator = findViewById(R.id.onboarding_page_indicator)
 
+        buildPages()
+
         viewPager.adapter = object : FragmentStateAdapter(this) {
-            override fun getItemCount() = fragments.size
-            override fun createFragment(position: Int): Fragment = fragments[position]
+            override fun getItemCount() = activeFragments.size
+            override fun createFragment(position: Int): Fragment = activeFragments[position]
         }
         viewPager.isUserInputEnabled = false
 
@@ -54,61 +52,99 @@ class OnboardingActivity : BaseActivity() {
 
         nextBtn.setOnClickListener {
             val current = viewPager.currentItem
-            when {
-                current == 0 -> viewPager.currentItem = 1
-                current == 1 -> viewPager.currentItem = 2
-                current == 2 && isPermissionsGranted() -> viewPager.currentItem = 3
-                current == 3 -> startSetup()
+            if (current < activeFragments.size - 1) {
+                viewPager.currentItem = current + 1
+            } else {
+                startSetup()
             }
         }
 
         skipBtn.setOnClickListener {
-            if (isPermissionsGranted()) {
-                startMainActivity()
+            val current = viewPager.currentItem
+            val fragment = activeFragments.getOrNull(current)
+            if (fragment is StatisticsFragment) {
+                SetupState.setStatisticsSkipped(this, true)
+                buildPages()
+                viewPager.adapter = object : FragmentStateAdapter(this) {
+                    override fun getItemCount() = activeFragments.size
+                    override fun createFragment(position: Int): Fragment = activeFragments[position]
+                }
+                viewPager.currentItem = 0
             }
         }
 
         updateUI(0)
     }
 
+    private fun buildPages() {
+        allFragments.clear()
+        val pages = mutableListOf<Fragment>()
+
+        val greeting = GreetingFragment()
+        allFragments["greeting"] = greeting
+        pages.add(greeting)
+
+        if (!SetupState.isStatisticsSkipped(this)) {
+            val stats = StatisticsFragment()
+            allFragments["statistics"] = stats
+            pages.add(stats)
+        }
+
+        if (!SetupState.arePermissionsGranted(this)) {
+            val perms = PermissionsFragment()
+            allFragments["permissions"] = perms
+            pages.add(perms)
+        }
+
+        val setup = SetupConfigFragment()
+        allFragments["setup"] = setup
+        pages.add(setup)
+
+        activeFragments = pages
+    }
+
     private fun isPermissionsGranted(): Boolean {
-        return permissionsFragment.isAdded && permissionsFragment.allPermissionsGranted()
+        return SetupState.arePermissionsGranted(this)
     }
 
     private fun updateUI(position: Int) {
-        pageIndicator.text = "${position + 1} / ${fragments.size}"
+        val total = activeFragments.size
+        pageIndicator.text = "${position + 1} / $total"
 
-        when (position) {
-            0 -> {
+        val fragment = activeFragments.getOrNull(position)
+
+        when {
+            fragment is StatisticsFragment -> {
                 nextBtn.text = "Next"
                 skipBtn.visibility = View.VISIBLE
             }
-            1 -> {
-                nextBtn.text = "Next"
-                skipBtn.visibility = View.VISIBLE
-            }
-            2 -> {
+            fragment is PermissionsFragment -> {
                 nextBtn.text = if (isPermissionsGranted()) "Next" else "Grant Permissions"
-                skipBtn.visibility = View.VISIBLE
+                skipBtn.visibility = View.GONE
             }
-            3 -> {
+            position == total - 1 -> {
                 nextBtn.text = "Start Setup"
+                skipBtn.visibility = View.GONE
+            }
+            else -> {
+                nextBtn.text = "Next"
                 skipBtn.visibility = View.GONE
             }
         }
     }
 
     private fun startSetup() {
-        val autoInstall = setupConfigFragment.isAutoInstall()
+        val setupFragment = allFragments["setup"] as? SetupConfigFragment ?: return
+        val autoInstall = setupFragment.isAutoInstall()
 
         SetupState.setOnboardingComplete(this, true)
 
         if (autoInstall) {
             val intent = Intent(this, TerminalSetupActivity::class.java).apply {
-                putExtra(TerminalSetupActivity.EXTRA_SDK_VERSION, setupConfigFragment.getSelectedSdkVersion())
-                putExtra(TerminalSetupActivity.EXTRA_JDK_VERSION, setupConfigFragment.getSelectedJdkVersion())
-                putExtra(TerminalSetupActivity.EXTRA_WITH_GIT, setupConfigFragment.isGitSelected())
-                putExtra(TerminalSetupActivity.EXTRA_WITH_OPENSSH, setupConfigFragment.isOpensshSelected())
+                putExtra(TerminalSetupActivity.EXTRA_SDK_VERSION, setupFragment.getSelectedSdkVersion())
+                putExtra(TerminalSetupActivity.EXTRA_JDK_VERSION, setupFragment.getSelectedJdkVersion())
+                putExtra(TerminalSetupActivity.EXTRA_WITH_GIT, setupFragment.isGitSelected())
+                putExtra(TerminalSetupActivity.EXTRA_WITH_OPENSSH, setupFragment.isOpensshSelected())
             }
             startActivity(intent)
         } else {
@@ -125,7 +161,8 @@ class OnboardingActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (viewPager.currentItem == 2) {
+        val fragment = activeFragments.getOrNull(viewPager.currentItem)
+        if (fragment is PermissionsFragment) {
             nextBtn.text = if (isPermissionsGranted()) "Next" else "Grant Permissions"
         }
     }

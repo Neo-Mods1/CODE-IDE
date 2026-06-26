@@ -49,4 +49,14 @@ object SetupState {
         val installGranted = context.packageManager.canRequestPackageInstalls()
         return storageGranted && installGranted
     }
+
+    private const val KEY_STATISTICS_SKIPPED = "statistics_skipped"
+
+    fun isStatisticsSkipped(context: Context): Boolean {
+        return prefs(context).getBoolean(KEY_STATISTICS_SKIPPED, false)
+    }
+
+    fun setStatisticsSkipped(context: Context, skipped: Boolean) {
+        prefs(context).edit().putBoolean(KEY_STATISTICS_SKIPPED, skipped).apply()
+    }
 }

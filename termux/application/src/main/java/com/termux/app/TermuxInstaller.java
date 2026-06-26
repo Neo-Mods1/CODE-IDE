@@ -130,9 +130,12 @@ public final class TermuxInstaller {
                                     if (parts.length != 2)
                                         throw new RuntimeException("Malformed symlink line: " + line);
 
-                                    // AndroidIDE uses parts[0] as-is for target (they ARE com.termux)
-                                    // We must rewrite com.termux paths to our package
+                                    // Bootstrap archives are built with our package name, so symlink
+                                    // targets are already correct. Use parts[0] as-is like AndroidIDE.
+                                    // Also handle legacy AndroidIDE bootstraps with com.itsaky.androidide paths.
                                     String oldPath = parts[0]
+                                        .replace("/data/data/com.itsaky.androidide/files/usr", prefixPath)
+                                        .replace("/data/user/0/com.itsaky.androidide/files/usr", prefixPath)
                                         .replace("/data/data/com.termux/files/usr", prefixPath)
                                         .replace("/data/user/0/com.termux/files/usr", prefixPath);
                                     String newPath = stagingPath + "/" + parts[1];

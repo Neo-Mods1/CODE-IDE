@@ -17,6 +17,7 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.ArrayAdapter
 import android.widget.ListView
 import android.widget.TextView
@@ -65,22 +66,24 @@ class TerminalActivity : BaseActivity(), TerminalSessionClient {
         window.statusBarColor = Color.BLACK
         window.navigationBarColor = Color.BLACK
 
+        // Make terminal resize when keyboard appears
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+
         terminalView = findViewById(R.id.terminal_view)
         drawerLayout = findViewById(R.id.drawer_layout)
         sessionListView = findViewById(R.id.terminal_sessions_list)
         extraKeysView = findViewById(R.id.extra_keys_view)
+
         extraKeysView.setExtraKeysViewClient(object : ExtraKeysView.IExtraKeysView {
             override fun onExtraKeyButtonClick(view: View, buttonInfo: ExtraKeyButton, button: com.google.android.material.button.MaterialButton) {
                 val session = currentSession ?: return
                 val key = buttonInfo.key
-                val isCtrl = extraKeysView.readSpecialButton(SpecialButton.CTRL, false) ?: false
-                val isAlt = extraKeysView.readSpecialButton(SpecialButton.ALT, false) ?: false
-                val isShift = extraKeysView.readSpecialButton(SpecialButton.SHIFT, false) ?: false
-                val isFn = extraKeysView.readSpecialButton(SpecialButton.FN, false) ?: false
 
                 if (buttonInfo.isMacro) {
-                    // Handle macro sequences like "CTRL c" or "CTRL d"
-                    var ctrl = isCtrl; var alt = isAlt; var shift = isShift; var fn = isFn
+                    var ctrl = extraKeysView.readSpecialButton(SpecialButton.CTRL, false) ?: false
+                    var alt = extraKeysView.readSpecialButton(SpecialButton.ALT, false) ?: false
+                    var shift = extraKeysView.readSpecialButton(SpecialButton.SHIFT, false) ?: false
+                    var fn = extraKeysView.readSpecialButton(SpecialButton.FN, false) ?: false
                     for (token in key.split(" ")) {
                         when (token) {
                             "CTRL" -> ctrl = true
@@ -89,11 +92,18 @@ class TerminalActivity : BaseActivity(), TerminalSessionClient {
                             "FN" -> fn = true
                             else -> {
                                 sendKeyWithModifiers(token, ctrl, alt, shift, fn)
-                                ctrl = isCtrl; alt = isAlt; shift = isShift; fn = isFn
+                                ctrl = extraKeysView.readSpecialButton(SpecialButton.CTRL, false) ?: false
+                                alt = extraKeysView.readSpecialButton(SpecialButton.ALT, false) ?: false
+                                shift = extraKeysView.readSpecialButton(SpecialButton.SHIFT, false) ?: false
+                                fn = extraKeysView.readSpecialButton(SpecialButton.FN, false) ?: false
                             }
                         }
                     }
                 } else {
+                    val isCtrl = extraKeysView.readSpecialButton(SpecialButton.CTRL, false) ?: false
+                    val isAlt = extraKeysView.readSpecialButton(SpecialButton.ALT, false) ?: false
+                    val isShift = extraKeysView.readSpecialButton(SpecialButton.SHIFT, false) ?: false
+                    val isFn = extraKeysView.readSpecialButton(SpecialButton.FN, false) ?: false
                     sendKeyWithModifiers(key, isCtrl, isAlt, isShift, isFn)
                 }
             }
@@ -194,7 +204,6 @@ class TerminalActivity : BaseActivity(), TerminalSessionClient {
         TerminalService.start(this)
         ShellEnvironment.ensureDirectories(this)
 
-        // Install bootstrap if needed, then create session
         if (TermuxInstaller.isBootstrapInstalled(this)) {
             createNewSession()
         } else {
@@ -221,9 +230,10 @@ class TerminalActivity : BaseActivity(), TerminalSessionClient {
             if (shift) metaState = metaState or KeyEvent.META_SHIFT_ON or KeyEvent.META_SHIFT_LEFT_ON
             if (fn) metaState = metaState or KeyEvent.META_FUNCTION_ON
             val downEvent = KeyEvent(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), KeyEvent.ACTION_DOWN, keyCode, 0, metaState)
-            terminalView.dispatchKeyEvent(downEvent)
             val upEvent = KeyEvent(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, keyCode, 0, metaState)
-            terminalView.dispatchKeyEvent(upEvent)
+            // Use direct onKeyDown/onKeyUp instead of dispatchKeyEvent to avoid focus issues
+            terminalView.onKeyDown(keyCode, downEvent, session)
+            terminalView.onKeyUp(keyCode, upEvent)
         } else if (key.length == 1) {
             val bytes = key.toByteArray(Charsets.UTF_8)
             session.write(bytes, 0, bytes.size)
@@ -271,12 +281,32 @@ class TerminalActivity : BaseActivity(), TerminalSessionClient {
     private fun getShellPath(): String {
         val prefixBin = File(TermuxInstaller.getPrefixPath(this), "bin")
         val shells = listOf("login", "bash", "sh")
-        // Try each shell, prefer login shell like AndroidIDE
         for (shell in shells) {
             val f = File(prefixBin, shell)
             if (f.exists() && f.canExecute()) return f.absolutePath
         }
         return "/system/bin/sh"
+    }
+
+    override fun onResume() {
+        super.onResume()
+        terminalView.onResume()
+        // Show keyboard when resuming if terminal has focus
+        handler.postDelayed({
+            if (currentSession != null) {
+                terminalView.requestFocus()
+                val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+                imm.showSoftInput(terminalView, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+            }
+        }, 200)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        terminalView.onPause()
+        // Hide keyboard when pausing
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        imm.hideSoftInputFromWindow(terminalView.windowToken, 0)
     }
 
     override fun onDestroy() {

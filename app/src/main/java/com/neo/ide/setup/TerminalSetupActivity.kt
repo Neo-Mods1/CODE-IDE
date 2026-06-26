@@ -77,6 +77,9 @@ class TerminalSetupActivity : BaseActivity(), TerminalSessionClient {
         window.statusBarColor = Color.BLACK
         window.navigationBarColor = Color.BLACK
 
+        // Make terminal resize when keyboard appears
+        window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+
         if (SetupState.isSetupComplete(this)) {
             startActivity(Intent(this, HomeActivity::class.java))
             finish()
@@ -96,14 +99,18 @@ class TerminalSetupActivity : BaseActivity(), TerminalSessionClient {
                     val isCtrl = extraKeysView.readSpecialButton(SpecialButton.CTRL, false) ?: false
                     val isAlt = extraKeysView.readSpecialButton(SpecialButton.ALT, false) ?: false
                     var modifiers = 0
-                    if (isCtrl) modifiers = modifiers or KeyEvent.META_CTRL_ON
-                    if (isAlt) modifiers = modifiers or KeyEvent.META_ALT_ON
-                    val downEvent = KeyEvent(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), KeyEvent.ACTION_DOWN, keyCode, 0)
-                    terminalView.dispatchKeyEvent(downEvent)
-                    val upEvent = KeyEvent(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, keyCode, modifiers)
-                    terminalView.dispatchKeyEvent(upEvent)
+                    if (isCtrl) modifiers = modifiers or KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON
+                    if (isAlt) modifiers = modifiers or KeyEvent.META_ALT_ON or KeyEvent.META_ALT_LEFT_ON
+                    val downEvent = KeyEvent(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), KeyEvent.ACTION_DOWN, keyCode, 0, modifiers)
+                    val upEvent = KeyEvent(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, keyCode, 0, modifiers)
+                    // Use direct onKeyDown/onKeyUp instead of dispatchKeyEvent to avoid focus issues
+                    terminalView.onKeyDown(keyCode, downEvent, session)
+                    terminalView.onKeyUp(keyCode, upEvent)
                 } else if (key.length == 1) {
                     session.write(key.toByteArray(), 0, key.toByteArray().size)
+                } else if (key == "KEYBOARD") {
+                    val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+                    imm.toggleSoftInput(0, 0)
                 }
             }
             override fun performExtraKeyButtonHapticFeedback(view: View, buttonInfo: ExtraKeyButton, button: com.google.android.material.button.MaterialButton) = false
@@ -320,6 +327,25 @@ class TerminalSetupActivity : BaseActivity(), TerminalSessionClient {
             startActivity(Intent(this, HomeActivity::class.java))
             finish()
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        terminalView.onResume()
+        handler.postDelayed({
+            if (currentSession != null) {
+                terminalView.requestFocus()
+                val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+                imm.showSoftInput(terminalView, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+            }
+        }, 200)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        terminalView.onPause()
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        imm.hideSoftInputFromWindow(terminalView.windowToken, 0)
     }
 
     override fun onDestroy() {

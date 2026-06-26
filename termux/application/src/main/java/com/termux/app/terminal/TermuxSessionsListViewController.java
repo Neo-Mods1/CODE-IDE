@@ -1,12 +1,6 @@
-/**
- *	(っ◔◡◔)っ ♥
- *
- *	Telegram Contact • @NeoModsDev
- *	Telegram Channel • https://t.me/NeoModsChannel
- */
-
 package com.termux.app.terminal;
 
+import android.annotation.SuppressLint;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
@@ -22,73 +16,61 @@ import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.LayoutRes;
+import androidx.core.content.ContextCompat;
 
-import com.termux.app.TermuxService;
+import com.termux.R;
+import com.termux.app.TermuxActivity;
 import com.termux.shared.termux.shell.command.runner.terminal.TermuxSession;
+import com.termux.shared.theme.NightMode;
+import com.termux.shared.theme.ThemeUtils;
 import com.termux.terminal.TerminalSession;
 
 import java.util.List;
 
-/**
- * Adapter for the terminal session list in the drawer.
- * Adapted from AndroidIDE's TermuxSessionsListViewController.
- */
-public class TermuxSessionsListViewController extends ArrayAdapter<TermuxSession>
-        implements AdapterView.OnItemClickListener, AdapterView.OnItemLongClickListener {
+public class TermuxSessionsListViewController extends ArrayAdapter<TermuxSession> implements AdapterView.OnItemClickListener, AdapterView.OnItemLongClickListener {
 
-    private final android.app.Activity mActivity;
-    private final TermuxTerminalSessionActivityClient mSessionClient;
-    private final int mLayoutRes;
-    private final int mTitleViewId;
+    final TermuxActivity mActivity;
 
     final StyleSpan boldSpan = new StyleSpan(Typeface.BOLD);
     final StyleSpan italicSpan = new StyleSpan(Typeface.ITALIC);
 
-    public TermuxSessionsListViewController(
-            android.app.Activity activity,
-            TermuxTerminalSessionActivityClient sessionClient,
-            @LayoutRes int layoutRes,
-            int titleViewId,
-            List<TermuxSession> sessionList
-    ) {
-        super(activity.getApplicationContext(), layoutRes, sessionList);
+    public TermuxSessionsListViewController(TermuxActivity activity, List<TermuxSession> sessionList) {
+        super(activity.getApplicationContext(), R.layout.item_terminal_sessions_list, sessionList);
         this.mActivity = activity;
-        this.mSessionClient = sessionClient;
-        this.mLayoutRes = layoutRes;
-        this.mTitleViewId = titleViewId;
     }
 
+    @SuppressLint("SetTextI18n")
     @NonNull
     @Override
     public View getView(int position, View convertView, @NonNull ViewGroup parent) {
         View sessionRowView = convertView;
         if (sessionRowView == null) {
             LayoutInflater inflater = mActivity.getLayoutInflater();
-            sessionRowView = inflater.inflate(mLayoutRes, parent, false);
+            sessionRowView = inflater.inflate(R.layout.item_terminal_sessions_list, parent, false);
         }
 
-        TextView sessionTitleView = sessionRowView.findViewById(mTitleViewId);
+        TextView sessionTitleView = sessionRowView.findViewById(R.id.session_title);
 
-        TermuxSession termuxSession = getItem(position);
-        if (termuxSession == null) {
-            sessionTitleView.setText("null session");
-            return sessionRowView;
-        }
-
-        TerminalSession sessionAtRow = termuxSession.getTerminalSession();
+        TerminalSession sessionAtRow = getItem(position).getTerminalSession();
         if (sessionAtRow == null) {
             sessionTitleView.setText("null session");
             return sessionRowView;
+        }
+
+        boolean shouldEnableDarkTheme = ThemeUtils.shouldEnableDarkTheme(mActivity, NightMode.getAppNightMode().getName());
+
+        if (shouldEnableDarkTheme) {
+            sessionTitleView.setBackground(
+                ContextCompat.getDrawable(mActivity, R.drawable.session_background_black_selected)
+            );
         }
 
         String name = sessionAtRow.mSessionName;
         String sessionTitle = sessionAtRow.getTitle();
 
         String numberPart = "[" + (position + 1) + "] ";
-        String sessionNamePart = TextUtils.isEmpty(name) ? "" : name;
-        String sessionTitlePart = TextUtils.isEmpty(sessionTitle) ? ""
-            : ((sessionNamePart.isEmpty() ? "" : "\n") + sessionTitle);
+        String sessionNamePart = (TextUtils.isEmpty(name) ? "" : name);
+        String sessionTitlePart = (TextUtils.isEmpty(sessionTitle) ? "" : ((sessionNamePart.isEmpty() ? "" : "\n") + sessionTitle));
 
         String fullSessionTitle = numberPart + sessionNamePart + sessionTitlePart;
         SpannableString fullSessionTitleStyled = new SpannableString(fullSessionTitle);
@@ -98,28 +80,30 @@ public class TermuxSessionsListViewController extends ArrayAdapter<TermuxSession
         sessionTitleView.setText(fullSessionTitleStyled);
 
         boolean sessionRunning = sessionAtRow.isRunning();
+
         if (sessionRunning) {
             sessionTitleView.setPaintFlags(sessionTitleView.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
         } else {
             sessionTitleView.setPaintFlags(sessionTitleView.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
         }
-
-        int color = sessionRunning || sessionAtRow.getExitStatus() == 0 ? Color.WHITE : Color.RED;
+        int defaultColor = shouldEnableDarkTheme ? Color.WHITE : Color.BLACK;
+        int color = sessionRunning || sessionAtRow.getExitStatus() == 0 ? defaultColor : Color.RED;
         sessionTitleView.setTextColor(color);
-
         return sessionRowView;
     }
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         TermuxSession clickedSession = getItem(position);
-        if (clickedSession != null) {
-            mSessionClient.setCurrentSession(clickedSession.getTerminalSession());
-        }
+        mActivity.getTermuxTerminalSessionClient().setCurrentSession(clickedSession.getTerminalSession());
+        mActivity.getDrawer().closeDrawers();
     }
 
     @Override
     public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+        final TermuxSession selectedSession = getItem(position);
+        mActivity.getTermuxTerminalSessionClient().renameSession(selectedSession.getTerminalSession());
         return true;
     }
+
 }

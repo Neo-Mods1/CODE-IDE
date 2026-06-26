@@ -50,7 +50,7 @@ object SetupState {
         return storageGranted && installGranted
     }
 
-    private const val KEY_STATISTICS_SKIPPED = "statistics_skipped"
+    private const val KEY_STATISTICS_SKIPPED = "statistics_page_seen"
 
     fun isStatisticsSkipped(context: Context): Boolean {
         return prefs(context).getBoolean(KEY_STATISTICS_SKIPPED, false)

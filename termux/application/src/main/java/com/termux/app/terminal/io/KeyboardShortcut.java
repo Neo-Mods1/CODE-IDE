@@ -1,10 +1,3 @@
-/**
- *	(っ◔◡◔)っ ♥
- *
- *	Telegram Contact • @NeoModsDev
- *	Telegram Channel • https://t.me/NeoModsChannel
- */
-
 package com.termux.app.terminal.io;
 
 public class KeyboardShortcut {
@@ -16,4 +9,5 @@ public class KeyboardShortcut {
         this.codePoint = codePoint;
         this.shortcutAction = shortcutAction;
     }
+
 }

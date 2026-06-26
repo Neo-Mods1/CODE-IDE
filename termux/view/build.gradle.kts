@@ -6,7 +6,6 @@ val v = Properties().apply {
 
 plugins {
     id("com.android.library")
-    id("kotlin-android")
 }
 
 android {

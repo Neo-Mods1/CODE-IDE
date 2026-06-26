@@ -1,3 +1,10 @@
+/**
+ *	(っ◔◡◔)っ ♥
+ *
+ *	Telegram Contact • @NeoModsDev
+ *	Telegram Channel • https://t.me/NeoModsChannel
+ */
+
 package com.neo.ide.onboarding
 
 import android.content.Intent
@@ -52,6 +59,10 @@ class OnboardingActivity : BaseActivity() {
 
         nextBtn.setOnClickListener {
             val current = viewPager.currentItem
+            val fragment = activeFragments.getOrNull(current)
+            if (fragment is StatisticsFragment) {
+                SetupState.setStatisticsSkipped(this, true)
+            }
             if (current < activeFragments.size - 1) {
                 viewPager.currentItem = current + 1
             } else {

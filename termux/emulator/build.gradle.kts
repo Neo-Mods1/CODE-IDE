@@ -6,7 +6,6 @@ val v = Properties().apply {
 
 plugins {
     id("com.android.library")
-    id("kotlin-android")
 }
 
 android {
@@ -21,6 +20,10 @@ android {
             ndkBuild {
                 cFlags += arrayOf("-std=c11", "-Wall", "-Wextra", "-Os", "-fno-stack-protector", "-Wl,--gc-sections")
             }
+        }
+
+        ndk {
+            abiFilters += listOf("x86", "x86_64", "armeabi-v7a", "arm64-v8a")
         }
     }
 

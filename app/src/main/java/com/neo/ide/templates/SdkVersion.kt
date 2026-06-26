@@ -22,7 +22,8 @@ enum class SdkVersion(val api: Int, val version: String, val codename: String) {
     API_32(32, "12L", "Snow Cone"),
     API_33(33, "13", "Tiramisu"),
     API_34(34, "14", "UpsideDownCake"),
-    API_35(35, "15", "Vanilla Ice Cream");
+    API_35(35, "15", "Vanilla Ice Cream"),
+    API_36(36, "16", "Baklava");
 
     fun displayName(): String = "API $api: Android $version ($codename)"
 

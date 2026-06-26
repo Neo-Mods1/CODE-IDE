@@ -1,10 +1,3 @@
-/**
- *	(っ◔◡◔)っ ♥
- *
- *	Telegram Contact • @NeoModsDev
- *	Telegram Channel • https://t.me/NeoModsChannel
- */
-
 package com.termux.terminal;
 
 import android.annotation.SuppressLint;
@@ -28,7 +21,7 @@ import java.util.UUID;
  * A terminal session, consisting of a process coupled to a terminal interface.
  * <p>
  * The subprocess will be executed by the constructor, and when the size is made known by a call to
- * {@link #updateSize(int, int)} terminal emulation will begin and threads will be spawned to handle the subprocess I/O.
+ * {@link #updateSize(int, int, int, int)} terminal emulation will begin and threads will be spawned to handle the subprocess I/O.
  * All terminal emulation and callback methods will be performed on the main thread.
  * <p>
  * The child process may be exited forcefully by using the {@link #finishIfRunning()} method.
@@ -48,7 +41,7 @@ public final class TerminalSession extends TerminalOutput {
      * A queue written to from a separate thread when the process outputs, and read by main thread to process by
      * terminal emulator.
      */
-    final ByteQueue mProcessToTerminalIOQueue = new ByteQueue(4096);
+    final ByteQueue mProcessToTerminalIOQueue = new ByteQueue(64 * 1024);
     /**
      * A queue written to from the main thread due to user interaction, and read by another thread which forwards by
      * writing to the {@link #mTerminalFileDescriptor}.
@@ -68,7 +61,7 @@ public final class TerminalSession extends TerminalOutput {
 
     /**
      * The file descriptor referencing the master half of a pseudo-terminal pair, resulting from calling
-     * {@link JNI#createSubprocess(String, String, String[], String[], int[], int, int)}.
+     * {@link JNI#createSubprocess(String, String, String[], String[], int[], int, int, int, int)}.
      */
     private int mTerminalFileDescriptor;
 
@@ -107,12 +100,12 @@ public final class TerminalSession extends TerminalOutput {
     }
 
     /** Inform the attached pty of the new size and reflow or initialize the emulator. */
-    public void updateSize(int columns, int rows) {
+    public void updateSize(int columns, int rows, int cellWidthPixels, int cellHeightPixels) {
         if (mEmulator == null) {
-            initializeEmulator(columns, rows);
+            initializeEmulator(columns, rows, cellWidthPixels, cellHeightPixels);
         } else {
-            JNI.setPtyWindowSize(mTerminalFileDescriptor, rows, columns);
-            mEmulator.resize(columns, rows);
+            JNI.setPtyWindowSize(mTerminalFileDescriptor, rows, columns, cellWidthPixels, cellHeightPixels);
+            mEmulator.resize(columns, rows, cellWidthPixels, cellHeightPixels);
         }
     }
 
@@ -127,11 +120,11 @@ public final class TerminalSession extends TerminalOutput {
      * @param columns The number of columns in the terminal window.
      * @param rows    The number of rows in the terminal window.
      */
-    public void initializeEmulator(int columns, int rows) {
-        mEmulator = new TerminalEmulator(this, columns, rows, mTranscriptRows, mClient);
+    public void initializeEmulator(int columns, int rows, int cellWidthPixels, int cellHeightPixels) {
+        mEmulator = new TerminalEmulator(this, columns, rows, cellWidthPixels, cellHeightPixels, mTranscriptRows, mClient);
 
         int[] processId = new int[1];
-        mTerminalFileDescriptor = JNI.createSubprocess(mShellPath, mCwd, mArgs, mEnv, processId, rows, columns);
+        mTerminalFileDescriptor = JNI.createSubprocess(mShellPath, mCwd, mArgs, mEnv, processId, rows, columns, cellWidthPixels, cellHeightPixels);
         mShellPid = processId[0];
         mClient.setTerminalShellPid(this, mShellPid);
 
@@ -225,17 +218,6 @@ public final class TerminalSession extends TerminalOutput {
 
     public TerminalEmulator getEmulator() {
         return mEmulator;
-    }
-
-    /**
-     * Write text directly to the terminal emulator display, bypassing the shell process.
-     * This is useful for displaying setup output or status text before the shell is ready.
-     */
-    public void writeToTerminal(String text) {
-        if (text == null || mEmulator == null) return;
-        byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
-        mEmulator.append(bytes, bytes.length);
-        notifyScreenUpdate();
     }
 
     /** Notify the {@link #mClient} that the screen has changed. */
@@ -354,7 +336,7 @@ public final class TerminalSession extends TerminalOutput {
     @SuppressLint("HandlerLeak")
     class MainThreadHandler extends Handler {
 
-        final byte[] mReceiveBuffer = new byte[4 * 1024];
+        final byte[] mReceiveBuffer = new byte[64 * 1024];
 
         @Override
         public void handleMessage(Message msg) {

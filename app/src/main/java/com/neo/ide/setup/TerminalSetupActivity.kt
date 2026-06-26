@@ -26,6 +26,7 @@ import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import com.neo.ide.R
 import com.neo.ide.activities.HomeActivity
+import com.neo.ide.download.SetupState
 import android.content.Intent
 import com.termux.shared.termux.extrakeys.ExtraKeysView
 import com.termux.shared.termux.extrakeys.ExtraKeysConstants

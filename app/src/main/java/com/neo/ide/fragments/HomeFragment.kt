@@ -24,6 +24,7 @@ import com.neo.ide.project.CreateProjectActivity
 import com.neo.ide.project.OpenProjectActivity
 import com.neo.ide.project.RecentProjectsManager
 import com.neo.ide.setup.TerminalSetupActivity
+import com.neo.ide.terminal.TerminalActivity
 
 class HomeFragment : Fragment() {
 
@@ -77,7 +78,7 @@ class HomeFragment : Fragment() {
                 openProjectLauncher.launch(Intent(requireContext(), OpenProjectActivity::class.java))
             }
             HomeScreenAction.ACTION_OPEN_TERMINAL -> {
-                startActivity(Intent(requireContext(), TerminalSetupActivity::class.java))
+                startActivity(Intent(requireContext(), TerminalActivity::class.java))
             }
             HomeScreenAction.ACTION_PREFERENCES -> {
                 // TODO: Open preferences

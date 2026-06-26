@@ -21,8 +21,6 @@ import com.neo.ide.R
 import com.neo.ide.activities.MainActivity
 import com.neo.ide.download.SetupState
 import com.neo.ide.setup.TerminalSetupActivity
-import org.json.JSONArray
-import org.json.JSONObject
 
 class OnboardingActivity : AppCompatActivity() {
 
@@ -100,34 +98,17 @@ class OnboardingActivity : AppCompatActivity() {
     }
 
     private fun startSetup() {
-        val selectedResources = setupConfigFragment.getSelectedResources()
         val autoInstall = setupConfigFragment.isAutoInstall()
-
-        if (selectedResources.isEmpty()) {
-            Toast.makeText(this, "Select at least one resource to install", Toast.LENGTH_SHORT).show()
-            return
-        }
 
         SetupState.setOnboardingComplete(this, true)
 
         if (autoInstall) {
-            val resourcesJson = JSONArray()
-            for (res in selectedResources) {
-                val obj = JSONObject().apply {
-                    put("name", res.name)
-                    put("category", res.category)
-                    put("version", res.version)
-                    put("url", res.url)
-                    put("size", res.size)
-                    put("sha256", res.sha256)
-                    put("format", res.format)
-                    put("destination", res.destination)
-                }
-                resourcesJson.put(obj)
-            }
-
+            // Build setup arguments and pass to TerminalSetupActivity
             val intent = Intent(this, TerminalSetupActivity::class.java).apply {
-                putExtra("selected_resources", resourcesJson.toString())
+                putExtra(TerminalSetupActivity.EXTRA_SDK_VERSION, setupConfigFragment.getSelectedSdkVersion())
+                putExtra(TerminalSetupActivity.EXTRA_JDK_VERSION, setupConfigFragment.getSelectedJdkVersion())
+                putExtra(TerminalSetupActivity.EXTRA_WITH_GIT, setupConfigFragment.isGitSelected())
+                putExtra(TerminalSetupActivity.EXTRA_WITH_OPENSSH, setupConfigFragment.isOpensshSelected())
             }
             startActivity(intent)
         } else {

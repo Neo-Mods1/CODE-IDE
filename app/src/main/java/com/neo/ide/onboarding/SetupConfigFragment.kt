@@ -21,11 +21,9 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.neo.ide.R
-import com.neo.ide.download.ResourceManager
 import kotlinx.coroutines.*
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
 class SetupConfigFragment : Fragment() {
@@ -37,27 +35,13 @@ class SetupConfigFragment : Fragment() {
     private lateinit var resourcesContainer: LinearLayout
     private lateinit var autoInstallSwitch: MaterialSwitch
     private lateinit var networkStatus: TextView
+    private lateinit var sdkVersionDropdown: AutoCompleteTextView
+    private lateinit var jdkVersionDropdown: AutoCompleteTextView
+    private lateinit var installGitCheckBox: CheckBox
+    private lateinit var installOpensshCheckBox: CheckBox
 
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-    private var manifest: ResourceManager.Manifest? = null
-    private val selectedResources = mutableMapOf<String, SelectedResource>()
-
-    // Categories always auto-downloaded (not shown in UI)
-    private val autoCategories = setOf("licenses", "cmdline_tools", "platform_tools", "build_tools")
-
-    // Categories shown in UI: platforms (required), gradle (required), ndk (optional)
-    private val visibleCategories = listOf("platforms", "gradle", "ndk")
-
-    data class SelectedResource(
-        val category: String,
-        val name: String,
-        val version: String,
-        val url: String,
-        val size: Long,
-        val sha256: String,
-        val format: String,
-        val destination: String
-    )
+    private var manifestLoaded = false
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
@@ -78,10 +62,14 @@ class SetupConfigFragment : Fragment() {
         resourcesContainer = view.findViewById(R.id.resources_container)
         autoInstallSwitch = view.findViewById(R.id.auto_install_switch)
         networkStatus = view.findViewById(R.id.network_status)
+        sdkVersionDropdown = view.findViewById(R.id.sdk_version_dropdown)
+        jdkVersionDropdown = view.findViewById(R.id.jdk_version_dropdown)
+        installGitCheckBox = view.findViewById(R.id.install_git_checkbox)
+        installOpensshCheckBox = view.findViewById(R.id.install_openssh_checkbox)
 
-        retryBtn.setOnClickListener { fetchManifest() }
+        retryBtn.setOnClickListener { loadConfig() }
         updateNetworkStatus()
-        fetchManifest()
+        loadConfig()
     }
 
     private fun updateNetworkStatus() {
@@ -93,210 +81,78 @@ class SetupConfigFragment : Fragment() {
         networkStatus.setTextColor(ContextCompat.getColor(requireContext(), if (connected) R.color.status_success else R.color.status_error))
     }
 
-    private fun fetchManifest() {
+    private fun loadConfig() {
         loadingContainer.visibility = View.VISIBLE
         errorContainer.visibility = View.GONE
         resourcesContainer.visibility = View.GONE
 
         scope.launch {
-            try {
-                val result = withContext(Dispatchers.IO) {
-                    val request = Request.Builder()
-                        .url(ResourceManager.MANIFEST_URL)
-                        .build()
-                    val response = client.newCall(request).execute()
-                    if (!response.isSuccessful) throw Exception("HTTP ${response.code}")
-                    val body = response.body?.string() ?: throw Exception("Empty body")
-                    parseManifest(body)
-                }
-                manifest = result
-                loadingContainer.visibility = View.GONE
-                resourcesContainer.visibility = View.VISIBLE
-                populateUI(result)
-            } catch (e: Exception) {
-                loadingContainer.visibility = View.GONE
-                errorContainer.visibility = View.VISIBLE
-                errorText.text = "Failed to fetch resources: ${e.message}"
-            }
+            delay(500) // Brief loading animation
+            manifestLoaded = true
+            loadingContainer.visibility = View.GONE
+            resourcesContainer.visibility = View.VISIBLE
+            populateUI()
         }
     }
 
-    private fun parseManifest(jsonStr: String): ResourceManager.Manifest {
-        val json = JSONObject(jsonStr)
+    private fun populateUI() {
+        // SDK versions — matches what's available in our manifest
+        val sdkVersions = listOf("36", "35", "34", "33")
+        val sdkAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, sdkVersions)
+        sdkVersionDropdown.setAdapter(sdkAdapter)
+        sdkVersionDropdown.setText(sdkVersions[0], false)
 
-        val categories = mutableMapOf<String, String>()
-        val catsObj = json.optJSONObject("categories")
-        if (catsObj != null) {
-            for (key in catsObj.keys()) {
-                categories[key] = catsObj.getString(key)
-            }
-        }
-
-        val resources = mutableListOf<ResourceManager.ResourceEntry>()
-        val resourcesArray = json.getJSONArray("resources")
-        for (i in 0 until resourcesArray.length()) {
-            val obj = resourcesArray.getJSONObject(i)
-            resources.add(
-                ResourceManager.ResourceEntry(
-                    name = obj.getString("name"),
-                    category = obj.optString("category", "unknown"),
-                    version = obj.optString("version", ""),
-                    size = obj.optLong("size", 0),
-                    sha256 = obj.optString("sha256", ""),
-                    format = obj.optString("format", "tar.xz"),
-                    url = obj.getString("url"),
-                    destination = obj.optString("destination", "{install_dir}/" + obj.getString("name"))
-                )
-            )
-        }
-
-        return ResourceManager.Manifest(
-            version = json.optString("version", "1.0"),
-            generated = json.optString("generated", ""),
-            resources = resources,
-            categories = categories
-        )
+        // JDK versions — 17 (stable) and 21 (experimental)
+        val jdkVersions = listOf("JDK 17 (Stable)", "JDK 21 (Experimental)")
+        val jdkAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, jdkVersions)
+        jdkVersionDropdown.setAdapter(jdkAdapter)
+        jdkVersionDropdown.setText(jdkVersions[0], false)
     }
 
-    private fun populateUI(manifest: ResourceManager.Manifest) {
-        resourcesContainer.removeAllViews()
-        selectedResources.clear()
-
-        val grouped = manifest.resources.groupBy { it.category }
-        val inflater = LayoutInflater.from(requireContext())
-
-        // Auto-select required categories (licenses, cmdline_tools, platform_tools, build_tools)
-        for (category in autoCategories) {
-            val resources = grouped[category] ?: continue
-            if (resources.isEmpty()) continue
-            val firstRes = resources[0]
-            selectedResources[category] = SelectedResource(
-                category = firstRes.category,
-                name = firstRes.name,
-                version = firstRes.version,
-                url = firstRes.url,
-                size = firstRes.size,
-                sha256 = firstRes.sha256,
-                format = firstRes.format,
-                destination = firstRes.destination
-            )
-        }
-
-        // Show visible categories in UI
-        for (category in visibleCategories) {
-            val resources = grouped[category] ?: continue
-            if (resources.isEmpty()) continue
-
-            val itemView = inflater.inflate(R.layout.item_resource_category, resourcesContainer, false)
-            val checkbox = itemView.findViewById<CheckBox>(R.id.resource_checkbox)
-            val nameText = itemView.findViewById<TextView>(R.id.resource_name)
-            val sizeText = itemView.findViewById<TextView>(R.id.resource_size)
-            val versionContainer = itemView.findViewById<LinearLayout>(R.id.version_container)
-            val versionDropdown = itemView.findViewById<AutoCompleteTextView>(R.id.version_dropdown)
-
-            val categoryLabel = manifest.categories[category] ?: category
-            nameText.text = categoryLabel
-
-            val firstRes = resources[0]
-            sizeText.text = formatSize(firstRes.size)
-
-            when (category) {
-                "ndk" -> {
-                    // NDK is optional - checkbox default unchecked
-                    checkbox.isChecked = false
-                    checkbox.isEnabled = true
-                    selectedResources.remove(category)
-                }
-                else -> {
-                    // Platforms and Gradle are required - checkbox checked and disabled
-                    checkbox.isChecked = true
-                    checkbox.isEnabled = false
-                    selectedResources[category] = SelectedResource(
-                        category = firstRes.category,
-                        name = firstRes.name,
-                        version = firstRes.version,
-                        url = firstRes.url,
-                        size = firstRes.size,
-                        sha256 = firstRes.sha256,
-                        format = firstRes.format,
-                        destination = firstRes.destination
-                    )
-                }
-            }
-
-            if (resources.size > 1) {
-                versionContainer.visibility = View.VISIBLE
-                val versions = resources.map { it.version }.toTypedArray()
-                val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, versions)
-                versionDropdown.setAdapter(adapter)
-                versionDropdown.setText(versions[0], false)
-
-                versionDropdown.setOnItemClickListener { _, _, position, _ ->
-                    val selected = resources[position]
-                    if (checkbox.isChecked) {
-                        selectedResources[category] = SelectedResource(
-                            category = selected.category,
-                            name = selected.name,
-                            version = selected.version,
-                            url = selected.url,
-                            size = selected.size,
-                            sha256 = selected.sha256,
-                            format = selected.format,
-                            destination = selected.destination
-                        )
-                    }
-                    sizeText.text = formatSize(selected.size)
-                }
-            }
-
-            checkbox.setOnCheckedChangeListener { _, isChecked ->
-                if (!isChecked) {
-                    selectedResources.remove(category)
-                } else {
-                    val version = versionDropdown.text.toString()
-                    val res = resources.find { it.version == version } ?: resources[0]
-                    selectedResources[category] = SelectedResource(
-                        category = res.category,
-                        name = res.name,
-                        version = res.version,
-                        url = res.url,
-                        size = res.size,
-                        sha256 = res.sha256,
-                        format = res.format,
-                        destination = res.destination
-                    )
-                }
-            }
-
-            resourcesContainer.addView(itemView)
-        }
+    fun getSelectedSdkVersion(): String {
+        return sdkVersionDropdown.text.toString().trim()
     }
 
-    private fun formatSize(bytes: Long): String {
-        if (bytes <= 0) return "Unknown size"
-        val kb = bytes / 1024.0
-        val mb = kb / 1024.0
-        val gb = mb / 1024.0
+    fun getSelectedJdkVersion(): String {
+        val text = jdkVersionDropdown.text.toString()
         return when {
-            gb >= 1.0 -> String.format("%.1f GB", gb)
-            mb >= 1.0 -> String.format("%.1f MB", mb)
-            kb >= 1.0 -> String.format("%.1f KB", kb)
-            else -> "$bytes B"
+            text.contains("21") -> "21"
+            else -> "17"
         }
     }
 
-    fun getSelectedResources(): List<SelectedResource> {
-        return selectedResources.values.toList()
-    }
+    fun isGitSelected(): Boolean = installGitCheckBox.isChecked
+
+    fun isOpensshSelected(): Boolean = installOpensshCheckBox.isChecked
 
     fun isAutoInstall(): Boolean = autoInstallSwitch.isChecked
 
-    fun getSetupArgs(): String {
-        val parts = mutableListOf<String>()
-        for ((category, resource) in selectedResources) {
-            parts.add("--$category ${resource.version}")
+    /**
+     * Build setup arguments for the idesetup.sh script.
+     * Returns an array of command-line arguments.
+     */
+    fun buildSetupArguments(): Array<String> {
+        val args = mutableListOf<String>()
+
+        args.add("--install-dir")
+        args.add(requireContext().filesDir.absolutePath + "/home")
+
+        args.add("--sdk")
+        args.add(getSelectedSdkVersion())
+
+        args.add("--jdk")
+        args.add(getSelectedJdkVersion())
+
+        args.add("--assume-yes")
+
+        if (isGitSelected()) {
+            args.add("--with-git")
         }
-        return parts.joinToString(" ")
+        if (isOpensshSelected()) {
+            args.add("--with-openssh")
+        }
+
+        return args.toTypedArray()
     }
 
     override fun onDestroy() {

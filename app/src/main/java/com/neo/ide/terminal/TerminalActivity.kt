@@ -77,7 +77,7 @@ class TerminalActivity : BaseActivity(), TerminalSessionClient {
                     val event = KeyEvent(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, keyCode, 0)
                     terminalView.onKeyDown(keyCode, event)
                 } else if (key.length == 1) {
-                    session.write(key)
+                    session.write(key.toByteArray(), 0, key.toByteArray().size)
                 }
             }
             override fun performExtraKeyButtonHapticFeedback(view: View, buttonInfo: ExtraKeyButton, button: com.google.android.material.button.MaterialButton) = false

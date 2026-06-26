@@ -17,6 +17,7 @@ android {
         minSdk = v.getProperty("minSdk").toInt()
 
         buildConfigField("String", "TERMUX_PACKAGE_VARIANT", "\"apt-android-7\"")
+        manifestPlaceholders["TERMUX_PACKAGE_NAME"] = "com.termux"
     }
 
     buildFeatures {
@@ -39,6 +40,8 @@ dependencies {
     implementation("androidx.annotation:annotation:${v.getProperty("annotationVersion")}")
     implementation("androidx.core:core:${v.getProperty("coreKtxVersion")}")
     implementation("androidx.drawerlayout:drawerlayout:${v.getProperty("drawerLayoutVersion")}")
+    implementation("androidx.preference:preference:1.2.1")
+    implementation("androidx.viewpager:viewpager:1.0.0")
     implementation("com.google.android.material:material:${v.getProperty("materialVersion")}")
     implementation("com.google.guava:guava:24.1-jre")
     implementation("io.noties.markwon:core:4.6.2")

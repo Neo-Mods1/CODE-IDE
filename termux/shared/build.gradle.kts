@@ -49,5 +49,7 @@ dependencies {
     implementation("io.noties.markwon:recycler:4.6.2")
     implementation("org.lsposed.hiddenapibypass:hiddenapibypass:6.1")
     implementation("commons-io:commons-io:2.5")
+    implementation("androidx.window:window:1.1.0")
+    implementation("com.termux:termux-am-library:v2.0.0")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:1.1.5")
 }

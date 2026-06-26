@@ -8,15 +8,21 @@
 package com.neo.ide.activities
 
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
+import android.view.View
 import com.google.android.material.appbar.MaterialToolbar
 import com.neo.ide.R
+import com.neo.ide.app.BaseActivity
 
-class HomeActivity : AppCompatActivity() {
+class HomeActivity : BaseActivity() {
+
+    override val enableSystemBarTheming = true
+
+    override fun bindLayout(): View {
+        return layoutInflater.inflate(R.layout.activity_home, null)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_home)
 
         val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)

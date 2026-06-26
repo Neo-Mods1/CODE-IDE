@@ -1,13 +1,13 @@
 package com.termux.app.terminal.io;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.view.Gravity;
 import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.drawerlayout.widget.DrawerLayout;
 
-import com.termux.R;
 import com.termux.app.terminal.TermuxTerminalSessionActivityClient;
 import com.termux.shared.logger.Logger;
 import com.termux.shared.termux.extrakeys.ExtraKeysConstants;
@@ -18,31 +18,35 @@ import com.termux.view.TerminalView;
 import org.json.JSONException;
 
 /**
- * Extra keys handler with special buttons (KEYBOARD, DRAWER, PASTE, SCROLL).
+ * Extra keys handler with special buttons.
  * Adapted from AndroidIDE's TermuxTerminalExtraKeys.
  */
 public class TermuxTerminalExtraKeys extends TerminalExtraKeys {
 
     private ExtraKeysInfo mExtraKeysInfo;
-    private final com.neo.ide.app.BaseActivity mActivity;
+    private final Context mContext;
     private final TermuxTerminalSessionActivityClient mSessionActivityClient;
+    private DrawerLayout mDrawerLayout;
 
     private static final String LOG_TAG = "TermuxTerminalExtraKeys";
 
     public TermuxTerminalExtraKeys(
-            com.neo.ide.app.BaseActivity activity,
+            Context context,
             @NonNull TerminalView terminalView,
             TermuxTerminalSessionActivityClient sessionActivityClient
     ) {
         super(terminalView);
-        mActivity = activity;
+        mContext = context;
         mSessionActivityClient = sessionActivityClient;
         setExtraKeys();
     }
 
+    public void setDrawerLayout(DrawerLayout drawerLayout) {
+        this.mDrawerLayout = drawerLayout;
+    }
+
     private void setExtraKeys() {
         mExtraKeysInfo = null;
-
         try {
             String extraKeys = "[[\"ESC\",\"/\",\"-\",\"HOME\",\"UP\",\"END\",\"PGUP\"],[\"TAB\",\"CTRL\",\"ALT\",\"LEFT\",\"DOWN\",\"RIGHT\",\"PGDN\"]]";
             String extraKeysStyle = "default";
@@ -86,7 +90,7 @@ public class TermuxTerminalExtraKeys extends TerminalExtraKeys {
     private void toggleSoftKeyboard() {
         try {
             android.view.inputmethod.InputMethodManager imm =
-                (android.view.inputmethod.InputMethodManager) mActivity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+                (android.view.inputmethod.InputMethodManager) mContext.getSystemService(Context.INPUT_METHOD_SERVICE);
             if (imm != null) {
                 imm.toggleSoftInput(0, 0);
             }
@@ -96,21 +100,19 @@ public class TermuxTerminalExtraKeys extends TerminalExtraKeys {
     }
 
     private void toggleDrawer() {
-        DrawerLayout drawerLayout = mActivity.findViewById(R.id.drawer_layout);
-        if (drawerLayout != null) {
-            if (drawerLayout.isDrawerOpen(Gravity.LEFT)) {
-                drawerLayout.closeDrawer(Gravity.LEFT);
+        if (mDrawerLayout != null) {
+            if (mDrawerLayout.isDrawerOpen(Gravity.LEFT)) {
+                mDrawerLayout.closeDrawer(Gravity.LEFT);
             } else {
-                drawerLayout.openDrawer(Gravity.LEFT);
+                mDrawerLayout.openDrawer(Gravity.LEFT);
             }
         }
     }
 
     private void toggleAutoScroll() {
-        View terminalView = mActivity.findViewById(R.id.terminal_view);
-        if (terminalView instanceof TerminalView) {
-            TerminalView tv = (TerminalView) terminalView;
-            if (tv.mEmulator != null) {
+        if (mSessionActivityClient != null) {
+            TerminalView tv = mSessionActivityClient.getTerminalView();
+            if (tv != null && tv.mEmulator != null) {
                 tv.mEmulator.toggleAutoScrollDisabled();
             }
         }

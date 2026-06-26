@@ -2,19 +2,23 @@ package com.neo.ide.project
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
+import android.view.View
 import com.neo.ide.R
+import com.neo.ide.app.BaseActivity
 import com.neo.ide.templates.TemplateDetailsFragment
 import com.neo.ide.templates.TemplateListFragment
 import com.neo.ide.templates.ProjectTemplate
 
-class CreateProjectActivity : AppCompatActivity() {
+class CreateProjectActivity : BaseActivity() {
 
     private var selectedTemplate: ProjectTemplate? = null
 
+    override fun bindLayout(): View {
+        return layoutInflater.inflate(R.layout.activity_create_project, null)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_create_project)
 
         if (savedInstanceState == null) {
             showTemplateList()

@@ -1,12 +1,6 @@
-/**
- *	(っ◔◡◔)っ ♥
- *
- *	Telegram Contact • @NeoModsDev
- *	Telegram Channel • https://t.me/NeoModsChannel
- */
-
 package com.neo.ide.setup
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
@@ -21,13 +15,12 @@ import android.widget.ArrayAdapter
 import android.widget.ListView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import com.neo.ide.R
 import com.neo.ide.activities.HomeActivity
+import com.neo.ide.app.BaseActivity
 import com.neo.ide.download.SetupState
-import android.content.Intent
 import com.termux.shared.termux.extrakeys.ExtraKeysView
 import com.termux.shared.termux.extrakeys.ExtraKeysConstants
 import com.termux.shared.termux.extrakeys.ExtraKeysInfo
@@ -39,12 +32,7 @@ import com.termux.view.TerminalView
 import com.termux.view.TerminalViewClient
 import java.io.File
 
-/**
- * Terminal activity that runs the idesetup.sh script during first-time setup.
- * Matches AndroidIDE's TerminalActivity pattern: copies script from assets,
- * creates a real terminal session, and executes the script with args.
- */
-class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
+class TerminalSetupActivity : BaseActivity(), TerminalSessionClient {
 
     companion object {
         const val EXTRA_SETUP_ARGS = "setup_args"
@@ -70,15 +58,17 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
     private lateinit var sessionAdapter: ArrayAdapter<String>
     private var idesetupSession: IdesetupSession? = null
 
+    override fun bindLayout(): View {
+        return layoutInflater.inflate(R.layout.activity_terminal_setup, null)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_terminal_setup)
 
         window.decorView.setBackgroundColor(Color.BLACK)
         window.statusBarColor = Color.BLACK
         window.navigationBarColor = Color.BLACK
 
-        // If setup already complete, go straight to HomeActivity
         if (SetupState.isSetupComplete(this)) {
             startActivity(Intent(this, HomeActivity::class.java))
             finish()
@@ -104,7 +94,6 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
             override fun performExtraKeyButtonHapticFeedback(view: View, buttonInfo: ExtraKeyButton, button: com.google.android.material.button.MaterialButton) = false
         })
 
-        // Load extra keys
         try {
             val configJson = "[[\"ESC\",\"/\",\"-\",\"HOME\",\"UP\",\"END\",\"PGUP\"],[\"TAB\",\"CTRL\",\"ALT\",\"LEFT\",\"DOWN\",\"RIGHT\",\"PGDN\"]]"
             val extraKeysInfo = ExtraKeysInfo(configJson, "default", ExtraKeysConstants.CONTROL_CHARS_ALIASES)
@@ -116,20 +105,15 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
             )
             val heightPx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 37.5f, resources.displayMetrics)
             extraKeysView.reload(extraKeysInfo, heightPx)
-        } catch (e: Exception) {
-            // Extra keys failed to load
-        }
+        } catch (_: Exception) {}
 
-        // AndroidIDE default: 12sp font size
         currentFontSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12f, resources.displayMetrics).toInt()
 
-        // Toggle keyboard button
         findViewById<TextView>(R.id.toggle_keyboard_button).setOnClickListener {
             val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
             imm.toggleSoftInput(0, 0)
         }
 
-        // Session list adapter
         sessionAdapter = object : ArrayAdapter<String>(this, R.layout.item_terminal_session) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 val view = convertView ?: layoutInflater.inflate(R.layout.item_terminal_session, parent, false)
@@ -160,13 +144,11 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
         }
         sessionListView.adapter = sessionAdapter
 
-        // New session button
         findViewById<TextView>(R.id.new_session_button).setOnClickListener {
             createNewSession()
             drawerLayout.closeDrawer(GravityCompat.START)
         }
 
-        // Terminal view client
         terminalView.setTerminalViewClient(object : TerminalViewClient {
             override fun onScale(scale: Float): Float {
                 if (scale < 0.9f || scale > 1.1f) {
@@ -199,16 +181,12 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
             override fun logStackTrace(tag: String, e: Exception?) {}
         })
 
-        // Start foreground service
         TerminalService.start(this)
-
-        // Create session and run setup script
         ShellEnvironment.ensureDirectories(this)
         createSessionAndRunSetup()
     }
 
     private fun createSessionAndRunSetup() {
-        // Create the setup script from assets
         val script = IdesetupSession.createScript(this)
         if (script == null) {
             Toast.makeText(this, "Failed to create setup script", Toast.LENGTH_LONG).show()
@@ -216,10 +194,6 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
             return
         }
 
-        // Build arguments from intent
-        val args = buildSetupArguments()
-
-        // Create terminal session with the script as executable
         val shell = getShellPath()
         val homeDir = File(filesDir, "home")
         if (!homeDir.exists()) homeDir.mkdirs()
@@ -227,60 +201,20 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
         val environment = ShellEnvironment.buildEnvironment(this)
 
         val session = TerminalSession(
-            script.absolutePath,  // executable = our setup script
-            homeDir.absolutePath, // working directory
-            environment,          // environment variables
-            null,                 // stdin
-            null,                 // session name
-            this                  // client
+            script.absolutePath,
+            homeDir.absolutePath,
+            environment,
+            null,
+            null,
+            this
         )
         session.mSessionName = "IDE setup"
 
         sessions.add(session)
         sessionAdapter.notifyDataSetChanged()
 
-        // Store the session wrapper for cleanup
         idesetupSession = IdesetupSession(session, script)
-
-        // Attach to terminal view
         switchToSession(session)
-    }
-
-    private fun buildSetupArguments(): Array<String> {
-        val args = mutableListOf<String>()
-
-        // Install directory
-        args.add("--install-dir")
-        args.add(filesDir.absolutePath + "/home")
-
-        // SDK version
-        val sdkVersion = intent.getStringExtra(EXTRA_SDK_VERSION) ?: "36"
-        args.add("--sdk")
-        args.add(sdkVersion)
-
-        // JDK version
-        val jdkVersion = intent.getStringExtra(EXTRA_JDK_VERSION) ?: "17"
-        args.add("--jdk")
-        args.add(jdkVersion)
-
-        // Manifest URL
-        val manifestUrl = intent.getStringExtra(EXTRA_MANIFEST_URL)
-        if (manifestUrl != null) {
-            args.add("--manifest")
-            args.add(manifestUrl)
-        }
-
-        // Flags
-        args.add("--assume-yes")
-
-        if (intent.getBooleanExtra(EXTRA_WITH_GIT, false)) {
-            args.add("--with-git")
-        }
-        if (intent.getBooleanExtra(EXTRA_WITH_OPENSSH, false)) {
-            args.add("--with-openssh")
-        }
-
-        return args.toTypedArray()
     }
 
     private fun createNewSession(): TerminalSession {
@@ -306,20 +240,6 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
         currentSession = session
         terminalView.attachSession(session)
         terminalView.setTextSize(currentFontSize)
-        sessionAdapter.notifyDataSetChanged()
-    }
-
-    private fun removeSession(session: TerminalSession) {
-        if (sessions.size <= 1) {
-            Toast.makeText(this, "Can't close last session", Toast.LENGTH_SHORT).show()
-            return
-        }
-        session.finishIfRunning()
-        sessions.remove(session)
-        if (currentSession == session) {
-            currentSession = null
-            switchToSession(sessions.first())
-        }
         sessionAdapter.notifyDataSetChanged()
     }
 
@@ -365,7 +285,6 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
         }
     }
 
-    // TerminalSessionClient callbacks
     override fun onTextChanged(changedSession: TerminalSession) {
         if (changedSession === currentSession) {
             handler.post { terminalView.onScreenUpdated() }
@@ -379,7 +298,6 @@ class TerminalSetupActivity : AppCompatActivity(), TerminalSessionClient {
     override fun onSessionFinished(finishedSession: TerminalSession) {
         handler.post {
             sessionAdapter.notifyDataSetChanged()
-            // If the setup session finished successfully, mark setup complete
             if (finishedSession.exitStatus == 0) {
                 finishSetup()
             }

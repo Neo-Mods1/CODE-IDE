@@ -1,6 +1,5 @@
 package com.termux.app.terminal;
 
-import android.annotation.SuppressLint;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
@@ -16,8 +15,8 @@ import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.LayoutRes;
 
-import com.termux.R;
 import com.termux.app.TermuxService;
 import com.termux.shared.termux.shell.command.runner.terminal.TermuxSession;
 import com.termux.terminal.TerminalSession;
@@ -31,33 +30,38 @@ import java.util.List;
 public class TermuxSessionsListViewController extends ArrayAdapter<TermuxSession>
         implements AdapterView.OnItemClickListener, AdapterView.OnItemLongClickListener {
 
-    private final com.neo.ide.app.BaseActivity mActivity;
+    private final android.app.Activity mActivity;
     private final TermuxTerminalSessionActivityClient mSessionClient;
+    private final int mLayoutRes;
+    private final int mTitleViewId;
 
     final StyleSpan boldSpan = new StyleSpan(Typeface.BOLD);
     final StyleSpan italicSpan = new StyleSpan(Typeface.ITALIC);
 
     public TermuxSessionsListViewController(
-            com.neo.ide.app.BaseActivity activity,
+            android.app.Activity activity,
             TermuxTerminalSessionActivityClient sessionClient,
+            @LayoutRes int layoutRes,
+            int titleViewId,
             List<TermuxSession> sessionList
     ) {
-        super(activity.getApplicationContext(), R.layout.item_terminal_session, sessionList);
+        super(activity.getApplicationContext(), layoutRes, sessionList);
         this.mActivity = activity;
         this.mSessionClient = sessionClient;
+        this.mLayoutRes = layoutRes;
+        this.mTitleViewId = titleViewId;
     }
 
-    @SuppressLint("SetTextI18n")
     @NonNull
     @Override
     public View getView(int position, View convertView, @NonNull ViewGroup parent) {
         View sessionRowView = convertView;
         if (sessionRowView == null) {
             LayoutInflater inflater = mActivity.getLayoutInflater();
-            sessionRowView = inflater.inflate(R.layout.item_terminal_session, parent, false);
+            sessionRowView = inflater.inflate(mLayoutRes, parent, false);
         }
 
-        TextView sessionTitleView = sessionRowView.findViewById(R.id.session_title);
+        TextView sessionTitleView = sessionRowView.findViewById(mTitleViewId);
 
         TermuxSession termuxSession = getItem(position);
         if (termuxSession == null) {
@@ -109,7 +113,6 @@ public class TermuxSessionsListViewController extends ArrayAdapter<TermuxSession
 
     @Override
     public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-        // Long press: no-op for now (could add rename dialog)
         return true;
     }
 }

@@ -1,10 +1,3 @@
-/**
- *	(っ◔◡◔)っ ♥
- *
- *	Telegram Contact • @NeoModsDev
- *	Telegram Channel • https://t.me/NeoModsChannel
- */
-
 package com.neo.ide.terminal
 
 import android.graphics.Color
@@ -21,10 +14,10 @@ import android.widget.ArrayAdapter
 import android.widget.ListView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import com.neo.ide.R
+import com.neo.ide.app.BaseActivity
 import com.neo.ide.setup.ShellEnvironment
 import com.neo.ide.setup.TerminalService
 import com.termux.shared.termux.extrakeys.ExtraKeysView
@@ -38,12 +31,7 @@ import com.termux.view.TerminalView
 import com.termux.view.TerminalViewClient
 import java.io.File
 
-/**
- * Full interactive terminal activity.
- * Creates a real bash/sh session with proper environment.
- * No setup logic — just a plain terminal.
- */
-class TerminalActivity : AppCompatActivity(), TerminalSessionClient {
+class TerminalActivity : BaseActivity(), TerminalSessionClient {
 
     private lateinit var terminalView: TerminalView
     private lateinit var drawerLayout: DrawerLayout
@@ -58,9 +46,12 @@ class TerminalActivity : AppCompatActivity(), TerminalSessionClient {
 
     private lateinit var sessionAdapter: ArrayAdapter<String>
 
+    override fun bindLayout(): View {
+        return layoutInflater.inflate(R.layout.activity_terminal_setup, null)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_terminal_setup)
 
         window.decorView.setBackgroundColor(Color.BLACK)
         window.statusBarColor = Color.BLACK
@@ -85,7 +76,6 @@ class TerminalActivity : AppCompatActivity(), TerminalSessionClient {
             override fun performExtraKeyButtonHapticFeedback(view: View, buttonInfo: ExtraKeyButton, button: com.google.android.material.button.MaterialButton) = false
         })
 
-        // Load extra keys
         try {
             val configJson = "[[\"ESC\",\"/\",\"-\",\"HOME\",\"UP\",\"END\",\"PGUP\"],[\"TAB\",\"CTRL\",\"ALT\",\"LEFT\",\"DOWN\",\"RIGHT\",\"PGDN\"]]"
             val extraKeysInfo = ExtraKeysInfo(configJson, "default", ExtraKeysConstants.CONTROL_CHARS_ALIASES)
@@ -97,20 +87,15 @@ class TerminalActivity : AppCompatActivity(), TerminalSessionClient {
             )
             val heightPx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 37.5f, resources.displayMetrics)
             extraKeysView.reload(extraKeysInfo, heightPx)
-        } catch (e: Exception) {
-            // Extra keys failed to load
-        }
+        } catch (_: Exception) {}
 
-        // 12sp font size like AndroidIDE
         currentFontSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12f, resources.displayMetrics).toInt()
 
-        // Toggle keyboard button
         findViewById<TextView>(R.id.toggle_keyboard_button).setOnClickListener {
             val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
             imm.toggleSoftInput(0, 0)
         }
 
-        // Session list adapter
         sessionAdapter = object : ArrayAdapter<String>(this, R.layout.item_terminal_session) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 val view = convertView ?: layoutInflater.inflate(R.layout.item_terminal_session, parent, false)
@@ -141,13 +126,11 @@ class TerminalActivity : AppCompatActivity(), TerminalSessionClient {
         }
         sessionListView.adapter = sessionAdapter
 
-        // New session button
         findViewById<TextView>(R.id.new_session_button).setOnClickListener {
             createNewSession()
             drawerLayout.closeDrawer(GravityCompat.START)
         }
 
-        // Terminal view client
         terminalView.setTerminalViewClient(object : TerminalViewClient {
             override fun onScale(scale: Float): Float {
                 if (scale < 0.9f || scale > 1.1f) {
@@ -180,13 +163,8 @@ class TerminalActivity : AppCompatActivity(), TerminalSessionClient {
             override fun logStackTrace(tag: String, e: Exception?) {}
         })
 
-        // Start foreground service
         TerminalService.start(this)
-
-        // Ensure directories exist
         ShellEnvironment.ensureDirectories(this)
-
-        // Create first session
         createNewSession()
     }
 
@@ -216,20 +194,6 @@ class TerminalActivity : AppCompatActivity(), TerminalSessionClient {
         sessionAdapter.notifyDataSetChanged()
     }
 
-    private fun removeSession(session: TerminalSession) {
-        if (sessions.size <= 1) {
-            Toast.makeText(this, "Can't close last session", Toast.LENGTH_SHORT).show()
-            return
-        }
-        session.finishIfRunning()
-        sessions.remove(session)
-        if (currentSession == session) {
-            currentSession = null
-            switchToSession(sessions.first())
-        }
-        sessionAdapter.notifyDataSetChanged()
-    }
-
     private fun changeFontSize(increase: Boolean) {
         val delta = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 2f, resources.displayMetrics).toInt()
         currentFontSize = if (increase) currentFontSize + delta else currentFontSize - delta
@@ -252,7 +216,6 @@ class TerminalActivity : AppCompatActivity(), TerminalSessionClient {
         }
     }
 
-    // TerminalSessionClient callbacks
     override fun onTextChanged(changedSession: TerminalSession) {
         if (changedSession === currentSession) {
             handler.post { terminalView.onScreenUpdated() }

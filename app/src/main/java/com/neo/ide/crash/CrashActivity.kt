@@ -1,10 +1,3 @@
-/**
- *	(っ◔◡◔)っ ♥
- *
- *	Telegram Contact • @NeoModsDev
- *	Telegram Channel • https://t.me/NeoModsChannel
- */
-
 package com.neo.ide.crash
 
 import android.content.ClipData
@@ -13,18 +6,23 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.os.Process
+import android.view.View
 import android.widget.Button
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import com.neo.ide.R
+import com.neo.ide.app.BaseActivity
 
-class CrashActivity : AppCompatActivity() {
+class CrashActivity : BaseActivity() {
 
     private lateinit var logTextView: TextView
     private lateinit var scrollView: ScrollView
     private var fullLog: String = ""
+
+    override fun bindLayout(): View {
+        return layoutInflater.inflate(R.layout.activity_crash, null)
+    }
 
     companion object {
         const val EXTRA_CRASH_LOG = "crash_log"
@@ -33,7 +31,6 @@ class CrashActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_crash)
 
         val messageText = findViewById<TextView>(R.id.crash_message)
         val loadingText = findViewById<TextView>(R.id.crash_loading)
@@ -49,7 +46,7 @@ class CrashActivity : AppCompatActivity() {
 
         fullLog = intent.getStringExtra(EXTRA_CRASH_LOG) ?: "No crash log available"
 
-        loadingText.visibility = android.view.View.GONE
+        loadingText.visibility = View.GONE
         logTextView.text = fullLog
     }
 

@@ -1,10 +1,3 @@
-/**
- *	(っ◔◡◔)っ ♥
- *
- *	Telegram Contact • @NeoModsDev
- *	Telegram Channel • https://t.me/NeoModsChannel
- */
-
 package com.neo.ide.onboarding
 
 import android.content.Intent
@@ -12,17 +5,16 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
-import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.neo.ide.R
 import com.neo.ide.activities.MainActivity
+import com.neo.ide.app.BaseActivity
 import com.neo.ide.download.SetupState
 import com.neo.ide.setup.TerminalSetupActivity
 
-class OnboardingActivity : AppCompatActivity() {
+class OnboardingActivity : BaseActivity() {
 
     private lateinit var viewPager: ViewPager2
     private lateinit var nextBtn: Button
@@ -35,9 +27,12 @@ class OnboardingActivity : AppCompatActivity() {
 
     private val fragments = listOf(greetingFragment, permissionsFragment, setupConfigFragment)
 
+    override fun bindLayout(): View {
+        return layoutInflater.inflate(R.layout.activity_onboarding, null)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_onboarding)
 
         viewPager = findViewById(R.id.onboarding_viewpager)
         nextBtn = findViewById(R.id.onboarding_next_btn)
@@ -103,7 +98,6 @@ class OnboardingActivity : AppCompatActivity() {
         SetupState.setOnboardingComplete(this, true)
 
         if (autoInstall) {
-            // Build setup arguments and pass to TerminalSetupActivity
             val intent = Intent(this, TerminalSetupActivity::class.java).apply {
                 putExtra(TerminalSetupActivity.EXTRA_SDK_VERSION, setupConfigFragment.getSelectedSdkVersion())
                 putExtra(TerminalSetupActivity.EXTRA_JDK_VERSION, setupConfigFragment.getSelectedJdkVersion())

@@ -15,24 +15,27 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
+import android.view.View
 import android.widget.Button
-import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.google.android.material.card.MaterialCardView
 import com.neo.ide.R
+import com.neo.ide.app.BaseActivity
 
-class PermissionsActivity : AppCompatActivity() {
+class PermissionsActivity : BaseActivity() {
 
     private lateinit var storageStatus: TextView
     private lateinit var storageGrantBtn: Button
     private lateinit var installStatus: TextView
     private lateinit var installGrantBtn: Button
     private lateinit var continueBtn: Button
+
+    override fun bindLayout(): View {
+        return layoutInflater.inflate(R.layout.activity_permissions, null)
+    }
 
     private val storagePermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -54,7 +57,6 @@ class PermissionsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_permissions)
 
         storageStatus = findViewById(R.id.permission_storage_status)
         storageGrantBtn = findViewById(R.id.permission_storage_grant_btn)
@@ -132,7 +134,6 @@ class PermissionsActivity : AppCompatActivity() {
         val storageGranted = isStoragePermissionGranted()
         val installGranted = canRequestPackageInstalls()
 
-        // Storage
         if (storageGranted) {
             storageStatus.text = "Granted"
             storageStatus.setTextColor(ContextCompat.getColor(this, R.color.status_success))
@@ -145,7 +146,6 @@ class PermissionsActivity : AppCompatActivity() {
             storageGrantBtn.text = "Grant"
         }
 
-        // Install packages
         if (installGranted) {
             installStatus.text = "Granted"
             installStatus.setTextColor(ContextCompat.getColor(this, R.color.status_success))
@@ -158,7 +158,6 @@ class PermissionsActivity : AppCompatActivity() {
             installGrantBtn.text = "Grant"
         }
 
-        // Continue button
         val allGranted = storageGranted && installGranted
         continueBtn.isEnabled = allGranted
         continueBtn.alpha = if (allGranted) 1f else 0.5f

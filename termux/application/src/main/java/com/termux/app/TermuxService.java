@@ -6,12 +6,12 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.net.wifi.WifiManager;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.PowerManager;
-import android.app.AlarmManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -321,7 +321,8 @@ public class TermuxService extends Service {
     private Notification buildNotification() {
         createNotificationChannel();
 
-        Intent mainIntent = new Intent(this, com.neo.ide.activities.HomeActivity.class);
+        Intent mainIntent = new Intent();
+        mainIntent.setClassName(getPackageName(), "com.neo.ide.activities.HomeActivity");
         mainIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(
             this, 0, mainIntent,

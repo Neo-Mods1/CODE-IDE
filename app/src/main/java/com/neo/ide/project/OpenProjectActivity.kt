@@ -3,16 +3,17 @@ package com.neo.ide.project
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textview.MaterialTextView
 import com.neo.ide.R
+import com.neo.ide.app.BaseActivity
 import java.io.File
 
-class OpenProjectActivity : AppCompatActivity() {
+class OpenProjectActivity : BaseActivity() {
 
     private val folderPicker = registerForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
@@ -20,9 +21,12 @@ class OpenProjectActivity : AppCompatActivity() {
         uri?.let { handleFolderSelected(it) }
     }
 
+    override fun bindLayout(): View {
+        return layoutInflater.inflate(R.layout.activity_open_project, null)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_open_project)
 
         val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
@@ -45,9 +49,7 @@ class OpenProjectActivity : AppCompatActivity() {
                 uri,
                 Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
             )
-        } catch (e: SecurityException) {
-            // Some providers don't support persistable permissions
-        }
+        } catch (_: SecurityException) {}
 
         val path = getPathFromUri(uri)
         if (path != null) {
@@ -87,7 +89,7 @@ class OpenProjectActivity : AppCompatActivity() {
     }
 
     private fun loadRecentProjects() {
-        val recentList = findViewById<com.google.android.material.textview.MaterialTextView>(R.id.recent_projects_list)
+        val recentList = findViewById<MaterialTextView>(R.id.recent_projects_list)
         val recentProjects = RecentProjectsManager.getRecentProjects(this)
 
         if (recentProjects.isEmpty()) {

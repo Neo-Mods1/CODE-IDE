@@ -86,6 +86,10 @@ android {
         buildConfigField("String", "TERMUX_PACKAGE_VARIANT", "\"apt-android-7\"")
         manifestPlaceholders["TERMUX_PACKAGE_NAME"] = "com.termux"
 
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+        }
+
         externalNativeBuild {
             ndkBuild {
                 cFlags("-std=c11", "-Wall", "-Wextra", "-Os", "-fno-stack-protector")

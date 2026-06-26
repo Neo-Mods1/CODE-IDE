@@ -87,7 +87,12 @@ android {
         manifestPlaceholders["TERMUX_PACKAGE_NAME"] = "com.termux"
 
         ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+            val targetAbi = project.findProperty("targetAbi") as? String
+            if (targetAbi != null) {
+                abiFilters += targetAbi
+            } else {
+                abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+            }
         }
 
         externalNativeBuild {

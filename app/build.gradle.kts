@@ -66,7 +66,6 @@ android {
             isShrinkResources = true
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
-            signingConfig = signingConfigs.findByName("release")
         }
     }
 
@@ -85,9 +84,11 @@ android {
         buildConfig = true
     }
 
+val isRelease = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
+
     splits {
         abi {
-            isEnable = true
+            isEnable = isRelease
             reset()
             include("arm64-v8a", "armeabi-v7a")
             isUniversalApk = false

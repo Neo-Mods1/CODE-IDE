@@ -1,10 +1,7 @@
-name: Debug Build
+name: Release Build
 
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -39,11 +36,16 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    - name: Build Debug APK (arm64 only)
+    - name: Build Release APKs (arm64 + arm)
       id: build
       continue-on-error: true
+      env:
+        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
       run: |
-        ./gradlew assembleDebug --stacktrace 2>&1 | tee build_output.log
+        ./gradlew assembleRelease --stacktrace 2>&1 | tee build_output.log
         echo "build_status=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
 
     - name: Check build result
@@ -55,24 +57,35 @@ jobs:
           echo "success=false" >> $GITHUB_OUTPUT
         fi
 
-    - name: Send success to Telegram
+    - name: Upload APK artifacts
+      if: steps.check.outputs.success == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: CODE-IDE-release
+        path: app/build/outputs/apk/release/*.apk
+        retention-days: 7
+
+    - name: Send each APK to Telegram
       if: steps.check.outputs.success == 'true'
       env:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       run: |
-        APK_FILE=$(find app/build/outputs/apk/debug -name "*.apk" | head -1)
-        APK_SIZE=$(du -h "$APK_FILE" | cut -f1)
+        BUILD_TIME=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
         COMMIT_MSG=$(echo "${{ github.event.head_commit.message || github.event.pull_request.title || 'N/A' }}" | head -1)
 
         curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
           -d chat_id="${TELEGRAM_CHAT_ID}" \
-          -d text="✅ DEBUG BUILD%0ASize: ${APK_SIZE}%0ACommit: ${COMMIT_MSG}"
+          -d text="✅ RELEASE BUILD SUCCESSFUL%0ATime: ${BUILD_TIME}%0ACommit: ${COMMIT_MSG}%0A%0ASending APKs..."
 
-        curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
-          -F chat_id="${TELEGRAM_CHAT_ID}" \
-          -F document=@"${APK_FILE}" \
-          -F caption="CODE-IDE debug arm64"
+        for APK in app/build/outputs/apk/release/*.apk; do
+          APK_NAME=$(basename "$APK")
+          APK_SIZE=$(du -h "$APK" | cut -f1)
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
+            -F chat_id="${TELEGRAM_CHAT_ID}" \
+            -F document=@"${APK}" \
+            -F caption="${APK_NAME} (${APK_SIZE})"
+        done
 
     - name: Send failure to Telegram
       if: steps.check.outputs.success == 'false'
@@ -84,7 +97,7 @@ jobs:
 
         curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
           -d chat_id="${TELEGRAM_CHAT_ID}" \
-          -d text="❌ DEBUG FAILED%0ACommit: ${COMMIT_MSG}%0ALogs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          -d text="❌ RELEASE FAILED%0ACommit: ${COMMIT_MSG}%0ALogs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
         curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
           -F chat_id="${TELEGRAM_CHAT_ID}" \

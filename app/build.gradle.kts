@@ -30,6 +30,8 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+        
+        
     }
 
     // Debug: arm64 only via ndk.abiFilters
@@ -59,29 +61,6 @@ android {
                 storePassword = keystoreProperties["storePassword"] as String
                 keyAlias = keystoreProperties["keyAlias"] as String
                 keyPassword = keystoreProperties["keyPassword"] as String
-            } else {
-                // Generate a debug keystore for builds without a release key
-                val debugKs = File(projectDir, "app/build/debug-keystore.jks")
-                if (!debugKs.exists()) {
-                    debugKs.parentFile.mkdirs()
-                    project.exec {
-                        commandLine(
-                            "keytool", "-genkeypair",
-                            "-alias", "debug",
-                            "-keyalg", "RSA",
-                            "-keysize", "2048",
-                            "-validity", "10000",
-                            "-keystore", debugKs.absolutePath,
-                            "-storepass", "android",
-                            "-keypass", "android",
-                            "-dname", "CN=Debug,OU=Debug,O=Debug,L=Debug,ST=Debug,C=US"
-                        )
-                    }
-                }
-                storeFile = debugKs
-                storePassword = "android"
-                keyAlias = "debug"
-                keyPassword = "android"
             }
         }
     }

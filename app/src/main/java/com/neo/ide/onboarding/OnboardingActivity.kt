@@ -22,10 +22,11 @@ class OnboardingActivity : BaseActivity() {
     private lateinit var pageIndicator: TextView
 
     private val greetingFragment = GreetingFragment()
+    private val statisticsFragment = StatisticsFragment()
     private val permissionsFragment = PermissionsFragment()
     private val setupConfigFragment = SetupConfigFragment()
 
-    private val fragments = listOf(greetingFragment, permissionsFragment, setupConfigFragment)
+    private val fragments = listOf(greetingFragment, statisticsFragment, permissionsFragment, setupConfigFragment)
 
     override fun bindLayout(): View {
         return layoutInflater.inflate(R.layout.activity_onboarding, null)
@@ -55,8 +56,9 @@ class OnboardingActivity : BaseActivity() {
             val current = viewPager.currentItem
             when {
                 current == 0 -> viewPager.currentItem = 1
-                current == 1 && isPermissionsGranted() -> viewPager.currentItem = 2
-                current == 2 -> startSetup()
+                current == 1 -> viewPager.currentItem = 2
+                current == 2 && isPermissionsGranted() -> viewPager.currentItem = 3
+                current == 3 -> startSetup()
             }
         }
 
@@ -82,10 +84,14 @@ class OnboardingActivity : BaseActivity() {
                 skipBtn.visibility = View.VISIBLE
             }
             1 -> {
-                nextBtn.text = if (isPermissionsGranted()) "Next" else "Grant Permissions"
+                nextBtn.text = "Next"
                 skipBtn.visibility = View.VISIBLE
             }
             2 -> {
+                nextBtn.text = if (isPermissionsGranted()) "Next" else "Grant Permissions"
+                skipBtn.visibility = View.VISIBLE
+            }
+            3 -> {
                 nextBtn.text = "Start Setup"
                 skipBtn.visibility = View.GONE
             }
@@ -119,7 +125,7 @@ class OnboardingActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (viewPager.currentItem == 1) {
+        if (viewPager.currentItem == 2) {
             nextBtn.text = if (isPermissionsGranted()) "Next" else "Grant Permissions"
         }
     }

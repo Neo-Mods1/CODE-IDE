@@ -26,8 +26,18 @@
         android:layout_height="wrap_content"
         android:textAppearance="?attr/textAppearanceBodyMedium"
         android:textColor="?attr/colorOnSurfaceVariant"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="8dp"
         android:lineSpacingMultiplier="1.2" />
+
+    <!-- Report status -->
+    <TextView
+        android:id="@+id/crash_report_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?attr/textAppearanceLabelSmall"
+        android:textColor="?attr/colorPrimary"
+        android:visibility="gone"
+        android:layout_marginBottom="8dp" />
 
     <!-- Loading -->
     <TextView
@@ -48,7 +58,7 @@
         android:layout_weight="1"
         android:background="?attr/colorSurfaceContainerLow"
         android:padding="12dp"
-        android:layout_marginBottom="16dp">
+        android:layout_marginBottom="12dp">
 
         <TextView
             android:id="@+id/crash_log_text"
@@ -62,6 +72,16 @@
             android:padding="8dp" />
 
     </ScrollView>
+
+    <!-- Send report checkbox -->
+    <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/crash_send_report"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Send anonymous crash report"
+        android:textAppearance="?attr/textAppearanceBodyMedium"
+        android:layout_marginBottom="16dp"
+        android:visibility="gone" />
 
     <!-- Buttons -->
     <LinearLayout

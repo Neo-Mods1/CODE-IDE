@@ -1,10 +1,3 @@
-/**
- *	(っ◔◡◔)っ ♥
- *
- *	Telegram Contact • @NeoModsDev
- *	Telegram Channel • https://t.me/NeoModsChannel
- */
-
 package com.neo.ide.crash
 
 import android.content.Context
@@ -43,6 +36,13 @@ class CrashHandler(private val context: Context) : Thread.UncaughtExceptionHandl
             crashLog.appendLine("App Version: ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
             crashLog.appendLine()
             crashLog.appendLine("========================================")
+            crashLog.appendLine("  Exception")
+            crashLog.appendLine("========================================")
+            crashLog.appendLine()
+            crashLog.appendLine("Type: ${throwable.javaClass.name}")
+            crashLog.appendLine("Message: ${throwable.message ?: "No message"}")
+            crashLog.appendLine()
+            crashLog.appendLine("========================================")
             crashLog.appendLine("  Stack Trace")
             crashLog.appendLine("========================================")
             crashLog.appendLine()
@@ -69,9 +69,14 @@ class CrashHandler(private val context: Context) : Thread.UncaughtExceptionHandl
                 crashLog.appendLine("Failed to read logcat: ${e.message}")
             }
 
+            val stacktrace = sw.toString()
+
             val intent = Intent(context, CrashActivity::class.java).apply {
                 putExtra(CrashActivity.EXTRA_CRASH_LOG, crashLog.toString())
                 putExtra(CrashActivity.EXTRA_CRASH_MESSAGE, throwable.message ?: "Unknown error")
+                putExtra(CrashActivity.EXTRA_EXCEPTION_TYPE, throwable.javaClass.name)
+                putExtra(CrashActivity.EXTRA_STACKTRACE, stacktrace)
+                putExtra(CrashActivity.EXTRA_THREAD, thread.name)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             }
             context.startActivity(intent)

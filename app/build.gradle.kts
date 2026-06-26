@@ -106,6 +106,9 @@ dependencies {
     implementation("org.json:json:20231013")
     implementation(project(":termux:view"))
     implementation(project(":termux:shared"))
-    implementation(project(":termux:application"))
+    implementation(project(":termux:application")) {
+        exclude(group = "com.google.guava", module = "listenablefuture")
+    }
+    implementation("com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:1.1.5")
 }

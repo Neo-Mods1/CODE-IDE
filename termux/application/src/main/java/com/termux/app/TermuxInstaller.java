@@ -4,13 +4,11 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
-import android.os.Build;
 import android.os.Environment;
 import android.system.Os;
 import android.util.Pair;
+import android.util.Log;
 import android.view.WindowManager;
-
-import com.termux.shared.termux.TermuxConstants;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -22,28 +20,45 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import static com.termux.shared.termux.TermuxConstants.TERMUX_PREFIX_DIR;
-import static com.termux.shared.termux.TermuxConstants.TERMUX_PREFIX_DIR_PATH;
-import static com.termux.shared.termux.TermuxConstants.TERMUX_STAGING_PREFIX_DIR;
-import static com.termux.shared.termux.TermuxConstants.TERMUX_STAGING_PREFIX_DIR_PATH;
-
 public final class TermuxInstaller {
 
     private static final String LOG_TAG = "TermuxInstaller";
+
+    private static File sPrefixDir;
+    private static File sStagingDir;
+
+    private static synchronized void initPaths(Context context) {
+        if (sPrefixDir == null) {
+            File filesDir = context.getFilesDir();
+            sPrefixDir = new File(filesDir, "usr");
+            sStagingDir = new File(filesDir, "usr-staging");
+        }
+    }
+
+    public static synchronized File getPrefixDir(Context context) {
+        initPaths(context);
+        return sPrefixDir;
+    }
+
+    public static String getPrefixPath(Context context) {
+        return getPrefixDir(context).getAbsolutePath();
+    }
+
+    public static boolean isBootstrapInstalled(Context context) {
+        File prefix = getPrefixDir(context);
+        File bash = new File(prefix, "bin/bash");
+        return prefix.exists() && bash.exists() && prefix.list() != null && prefix.list().length > 0;
+    }
 
     public interface SetupCallback {
         void onSuccess();
         void onError(String message);
     }
 
-    public static boolean isBootstrapInstalled() {
-        File prefixDir = new File(TERMUX_PREFIX_DIR_PATH);
-        File bash = new File(prefixDir, "bin/bash");
-        return prefixDir.exists() && prefixDir.list() != null && prefixDir.list().length > 0 && bash.exists();
-    }
-
     public static void setupBootstrapIfNeeded(final Activity activity, final SetupCallback callback) {
-        if (isBootstrapInstalled()) {
+        initPaths(activity);
+
+        if (isBootstrapInstalled(activity)) {
             callback.onSuccess();
             return;
         }
@@ -64,47 +79,78 @@ public final class TermuxInstaller {
 
         new Thread(() -> {
             try {
-                // Clean up previous attempts
-                deleteRecursive(new File(TERMUX_STAGING_PREFIX_DIR_PATH));
-                deleteRecursive(new File(TERMUX_PREFIX_DIR_PATH));
+                File filesDir = activity.getFilesDir();
+                File stagingDir = sStagingDir;
+                File prefixDir = sPrefixDir;
+
+                // Clean up only staging from previous failed attempts
+                deleteRecursive(stagingDir);
+
+                // Ensure parent (filesDir) exists
+                if (!filesDir.exists() && !filesDir.mkdirs()) {
+                    throw new RuntimeException("Failed to create files directory: " + filesDir.getAbsolutePath());
+                }
 
                 // Create staging directory
-                File stagingDir = new File(TERMUX_STAGING_PREFIX_DIR_PATH);
-                if (!stagingDir.mkdirs() && !stagingDir.exists()) {
-                    throw new RuntimeException("Failed to create staging directory: " + TERMUX_STAGING_PREFIX_DIR_PATH);
+                if (!stagingDir.exists() && !stagingDir.mkdirs()) {
+                    throw new RuntimeException("Failed to create staging directory: " + stagingDir.getAbsolutePath());
                 }
 
                 final byte[] buffer = new byte[8192];
                 final List<Pair<String, String>> symlinks = new ArrayList<>(50);
 
                 final byte[] zipBytes = loadZipBytes();
+                Log.i(LOG_TAG, "Bootstrap ZIP size: " + zipBytes.length + " bytes");
+
                 try (ZipInputStream zipInput = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
                     ZipEntry zipEntry;
                     while ((zipEntry = zipInput.getNextEntry()) != null) {
-                        if (zipEntry.getName().equals("SYMLINKS.txt")) {
+                        String entryName = zipEntry.getName();
+
+                        if (entryName.equals("SYMLINKS.txt")) {
                             BufferedReader symlinksReader = new BufferedReader(new InputStreamReader(zipInput));
                             String line;
                             while ((line = symlinksReader.readLine()) != null) {
-                                String[] parts = line.split("←");
-                                if (parts.length != 2)
-                                    throw new RuntimeException("Malformed symlink line: " + line);
-                                // Rewrite symlink target: replace com.termux paths with our actual prefix path
-                                String oldPath = parts[0]
-                                    .replace("/data/data/com.termux/files/usr", TERMUX_PREFIX_DIR_PATH)
-                                    .replace("/data/user/0/com.termux/files/usr", TERMUX_PREFIX_DIR_PATH);
-                                String newPath = TERMUX_STAGING_PREFIX_DIR_PATH + "/" + parts[1];
-                                symlinks.add(Pair.create(oldPath, newPath));
+                                String[] parts = line.split("\u2190"); // ← character
+                                if (parts.length != 2) {
+                                    Log.w(LOG_TAG, "Skipping malformed symlink line: " + line);
+                                    continue;
+                                }
+                                String symlinkTarget = parts[0];
+                                String symlinkLink = parts[1];
 
-                                File parent = new File(newPath).getParentFile();
-                                if (parent != null && !parent.exists()) {
-                                    if (!parent.mkdirs() && !parent.exists()) {
-                                        throw new RuntimeException("Failed to create directory: " + parent.getAbsolutePath());
-                                    }
+                                // Rewrite symlink target: replace com.termux paths with our actual prefix path
+                                symlinkTarget = symlinkTarget
+                                    .replace("/data/data/com.termux/files/usr", prefixDir.getAbsolutePath())
+                                    .replace("/data/user/0/com.termux/files/usr", prefixDir.getAbsolutePath());
+
+                                // The link path from SYMLINKS.txt is relative like "bin/bash"
+                                // We need to resolve it relative to our staging dir
+                                File linkFile;
+                                if (symlinkLink.startsWith("usr/")) {
+                                    // Strip usr/ prefix since we extract directly into staging
+                                    linkFile = new File(stagingDir, symlinkLink.substring(4));
+                                } else {
+                                    linkFile = new File(stagingDir, symlinkLink);
+                                }
+
+                                symlinks.add(Pair.create(symlinkTarget, linkFile.getAbsolutePath()));
+
+                                File parent = linkFile.getParentFile();
+                                if (parent != null && !parent.exists() && !parent.mkdirs()) {
+                                    throw new RuntimeException("Failed to create directory: " + parent.getAbsolutePath());
                                 }
                             }
                         } else {
-                            String zipEntryName = zipEntry.getName();
-                            File targetFile = new File(TERMUX_STAGING_PREFIX_DIR_PATH, zipEntryName);
+                            // Strip "usr/" prefix from ZIP entries since we extract directly into staging
+                            // ZIP entries look like: "usr/bin/bash", "usr/lib/libfoo.so", etc.
+                            if (entryName.startsWith("usr/")) {
+                                entryName = entryName.substring(4);
+                            }
+                            // Skip empty entries (just "usr/" directory itself)
+                            if (entryName.isEmpty()) continue;
+
+                            File targetFile = new File(stagingDir, entryName);
                             boolean isDirectory = zipEntry.isDirectory();
 
                             File parentDir = isDirectory ? targetFile : targetFile.getParentFile();
@@ -127,23 +173,33 @@ public final class TermuxInstaller {
                     }
                 }
 
-                if (symlinks.isEmpty())
-                    throw new RuntimeException("No SYMLINKS.txt encountered in bootstrap zip");
+                if (symlinks.isEmpty()) {
+                    throw new RuntimeException("No SYMLINKS.txt entries encountered in bootstrap zip");
+                }
+
+                // Create symlinks
                 for (Pair<String, String> symlink : symlinks) {
-                    Os.symlink(symlink.first, symlink.second);
+                    try {
+                        Os.symlink(symlink.first, symlink.second);
+                    } catch (Exception e) {
+                        Log.w(LOG_TAG, "Failed to create symlink: " + symlink.second + " -> " + symlink.first + ": " + e.getMessage());
+                    }
                 }
 
                 // Ensure all bin/ and lib/ executables have correct permissions
-                chmodRecursive(new File(TERMUX_STAGING_PREFIX_DIR_PATH, "bin"), 0700);
-                chmodRecursive(new File(TERMUX_STAGING_PREFIX_DIR_PATH, "lib"), 0700);
-                chmodRecursive(new File(TERMUX_STAGING_PREFIX_DIR_PATH, "libexec"), 0700);
+                chmodRecursive(new File(stagingDir, "bin"), 0700);
+                chmodRecursive(new File(stagingDir, "lib"), 0700);
+                chmodRecursive(new File(stagingDir, "libexec"), 0700);
 
-                // Move staging to final
-                if (!TERMUX_STAGING_PREFIX_DIR.renameTo(TERMUX_PREFIX_DIR)) {
-                    copyRecursive(new File(TERMUX_STAGING_PREFIX_DIR_PATH), new File(TERMUX_PREFIX_DIR_PATH));
-                    deleteRecursive(new File(TERMUX_STAGING_PREFIX_DIR_PATH));
+                // Move staging to final — delete old prefix first
+                deleteRecursive(prefixDir);
+                if (!stagingDir.renameTo(prefixDir)) {
+                    // Rename failed (cross-device?), fall back to copy
+                    copyRecursive(stagingDir, prefixDir);
+                    deleteRecursive(stagingDir);
                 }
 
+                Log.i(LOG_TAG, "Bootstrap installed successfully to " + prefixDir.getAbsolutePath());
                 activity.runOnUiThread(() -> {
                     try { progressDialog[0].dismiss(); } catch (Exception ignored) {}
                     callback.onSuccess();
@@ -151,6 +207,7 @@ public final class TermuxInstaller {
 
             } catch (final Exception e) {
                 String msg = e.getMessage() != null ? e.getMessage() : e.toString();
+                Log.e(LOG_TAG, "Bootstrap setup failed: " + msg, e);
                 activity.runOnUiThread(() -> {
                     try { progressDialog[0].dismiss(); } catch (Exception ignored) {}
                     callback.onError(msg);
@@ -182,6 +239,7 @@ public final class TermuxInstaller {
     }
 
     private static void deleteRecursive(File file) {
+        if (file == null || !file.exists()) return;
         if (file.isDirectory()) {
             File[] children = file.listFiles();
             if (children != null) {
@@ -216,7 +274,7 @@ public final class TermuxInstaller {
     static void setupStorageSymlinks(final Context context) {
         new Thread(() -> {
             try {
-                File storageDir = new File(TermuxConstants.TERMUX_HOME_DIR_PATH, "storage");
+                File storageDir = new File(getPrefixDir(context), "home/storage");
                 if (storageDir.exists()) deleteRecursive(storageDir);
                 storageDir.mkdirs();
 

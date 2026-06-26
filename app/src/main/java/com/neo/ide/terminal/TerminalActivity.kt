@@ -182,7 +182,7 @@ class TerminalActivity : BaseActivity(), TerminalSessionClient {
         ShellEnvironment.ensureDirectories(this)
 
         // Install bootstrap if needed, then create session
-        if (TermuxInstaller.isBootstrapInstalled()) {
+        if (TermuxInstaller.isBootstrapInstalled(this)) {
             createNewSession()
         } else {
             TermuxInstaller.setupBootstrapIfNeeded(this, object : TermuxInstaller.SetupCallback {

@@ -112,6 +112,7 @@ android {
             isJniDebuggable = false
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 }

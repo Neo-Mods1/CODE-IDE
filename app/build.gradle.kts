@@ -30,7 +30,7 @@ android {
             useSupportLibrary = true
         }
     }
-    
+
     signingConfigs {
         create("release") {
             if (keystorePropertiesFile.exists()) {
@@ -101,14 +101,14 @@ dependencies {
     implementation("androidx.transition:transition:${v.getProperty("transitionVersion")}")
     implementation("com.airbnb.android:lottie:${v.getProperty("lottieVersion")}")
     implementation("com.squareup.okhttp3:okhttp:${v.getProperty("okhttpVersion")}")
-    implementation("org.apache.commons:commons-compress:1.26.1")
-    implementation("org.tukaani:xz:1.9")
-    implementation("org.json:json:20231013")
+    implementation("org.apache.commons:commons-compress:${v.getProperty("commonsCompressVersion")}")
+    implementation("org.tukaani:xz:${v.getProperty("xzVersion")}")
+    implementation("org.json:json:${v.getProperty("jsonVersion")}")
     implementation(project(":termux:view"))
     implementation(project(":termux:shared"))
     implementation(project(":termux:application")) {
         exclude(group = "com.google.guava", module = "listenablefuture")
     }
-    implementation("com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava")
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:1.1.5")
+    implementation("com.google.guava:listenablefuture:${v.getProperty("listenablefutureVersion")}")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:${v.getProperty("desugarVersion")}")
 }

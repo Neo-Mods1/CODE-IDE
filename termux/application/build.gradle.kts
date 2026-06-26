@@ -25,6 +25,7 @@ android {
     }
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -40,19 +41,13 @@ dependencies {
     implementation("androidx.annotation:annotation:${v.getProperty("annotationVersion")}")
     implementation("androidx.core:core:${v.getProperty("coreKtxVersion")}")
     implementation("androidx.drawerlayout:drawerlayout:${v.getProperty("drawerLayoutVersion")}")
-    implementation("androidx.preference:preference:1.2.1")
-    implementation("androidx.viewpager:viewpager:1.0.0")
+    implementation("androidx.preference:preference:${v.getProperty("preferenceVersion")}")
+    implementation("androidx.viewpager:viewpager:${v.getProperty("viewpagerVersion")}")
     implementation("com.google.android.material:material:${v.getProperty("materialVersion")}")
-    implementation("com.google.guava:guava:24.1-jre")
-    implementation("io.noties.markwon:core:4.6.2")
-    implementation("io.noties.markwon:ext-strikethrough:4.6.2")
-    implementation("io.noties.markwon:linkify:4.6.2")
-    implementation("io.noties.markwon:recycler:4.6.2")
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:1.1.5")
-}
-
-android {
-    compileOptions {
-        isCoreLibraryDesugaringEnabled = true
-    }
+    implementation("com.google.guava:guava:${v.getProperty("guavaVersion")}")
+    implementation("io.noties.markwon:core:${v.getProperty("markwonVersion")}")
+    implementation("io.noties.markwon:ext-strikethrough:${v.getProperty("markwonVersion")}")
+    implementation("io.noties.markwon:linkify:${v.getProperty("markwonVersion")}")
+    implementation("io.noties.markwon:recycler:${v.getProperty("markwonVersion")}")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:${v.getProperty("desugarVersion")}")
 }

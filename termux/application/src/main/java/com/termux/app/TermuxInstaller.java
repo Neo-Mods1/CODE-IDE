@@ -70,11 +70,9 @@ public final class TermuxInstaller {
 
                 // Create staging directory
                 File stagingDir = new File(TERMUX_STAGING_PREFIX_DIR_PATH);
-                stagingDir.mkdirs();
-
-                // Create final prefix directory
-                File prefixDir = new File(TERMUX_PREFIX_DIR_PATH);
-                prefixDir.mkdirs();
+                if (!stagingDir.mkdirs() && !stagingDir.exists()) {
+                    throw new RuntimeException("Failed to create staging directory: " + TERMUX_STAGING_PREFIX_DIR_PATH);
+                }
 
                 final byte[] buffer = new byte[8192];
                 final List<Pair<String, String>> symlinks = new ArrayList<>(50);
@@ -90,12 +88,19 @@ public final class TermuxInstaller {
                                 String[] parts = line.split("←");
                                 if (parts.length != 2)
                                     throw new RuntimeException("Malformed symlink line: " + line);
-                                String oldPath = parts[0];
+                                // Rewrite symlink target: replace com.termux paths with our actual prefix path
+                                String oldPath = parts[0]
+                                    .replace("/data/data/com.termux/files/usr", TERMUX_PREFIX_DIR_PATH)
+                                    .replace("/data/user/0/com.termux/files/usr", TERMUX_PREFIX_DIR_PATH);
                                 String newPath = TERMUX_STAGING_PREFIX_DIR_PATH + "/" + parts[1];
                                 symlinks.add(Pair.create(oldPath, newPath));
 
                                 File parent = new File(newPath).getParentFile();
-                                if (parent != null && !parent.exists()) parent.mkdirs();
+                                if (parent != null && !parent.exists()) {
+                                    if (!parent.mkdirs() && !parent.exists()) {
+                                        throw new RuntimeException("Failed to create directory: " + parent.getAbsolutePath());
+                                    }
+                                }
                             }
                         } else {
                             String zipEntryName = zipEntry.getName();
@@ -103,7 +108,11 @@ public final class TermuxInstaller {
                             boolean isDirectory = zipEntry.isDirectory();
 
                             File parentDir = isDirectory ? targetFile : targetFile.getParentFile();
-                            if (parentDir != null && !parentDir.exists()) parentDir.mkdirs();
+                            if (parentDir != null && !parentDir.exists()) {
+                                if (!parentDir.mkdirs() && !parentDir.exists()) {
+                                    throw new RuntimeException("Failed to create directory: " + parentDir.getAbsolutePath());
+                                }
+                            }
 
                             if (!isDirectory) {
                                 try (FileOutputStream outStream = new FileOutputStream(targetFile)) {

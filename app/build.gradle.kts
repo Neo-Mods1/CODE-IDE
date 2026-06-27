@@ -102,7 +102,6 @@ dependencies {
     implementation(project(":editor"))
     implementation(project(":lsp"))
     implementation(project(":tooling"))
-    implementation(project(":projects"))
     implementation(project(":templates"))
 
     // Core Android

@@ -32,10 +32,17 @@ dependencies {
     implementation("com.google.code.gson:gson:${v.getProperty("gsonVersion")}")
     implementation("org.greenrobot:eventbus:${v.getProperty("eventBusVersion")}")
     implementation("org.slf4j:slf4j-api:${v.getProperty("slf4jVersion")}")
+    implementation("com.squareup:javapoet:${v.getProperty("javaPoetVersion")}")
+    implementation("com.itsaky.androidide.treesitter:android-tree-sitter:${v.getProperty("treeSitterVersion")}")
+    implementation("com.itsaky.androidide.treesitter:tree-sitter-java:${v.getProperty("treeSitterVersion")}")
+    implementation("com.itsaky.androidide.treesitter:tree-sitter-xml:${v.getProperty("treeSitterVersion")}")
 
     implementation("androidx.core:core-ktx:${v.getProperty("coreKtxVersion")}")
     implementation("androidx.appcompat:appcompat:${v.getProperty("appcompatVersion")}")
     implementation("androidx.annotation:annotation:${v.getProperty("annotationVersion")}")
+    implementation("androidx.constraintlayout:constraintlayout:${v.getProperty("constraintLayoutVersion")}")
+    implementation("com.google.android.material:material:${v.getProperty("materialVersion")}")
 
-    api(project(":projects"))
+    implementation("com.google.guava:guava:${v.getProperty("guavaVersion")}")
+    implementation("com.google.auto:auto-common:1.2.2")
 }

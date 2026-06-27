@@ -180,9 +180,14 @@ class OnboardingActivity : BaseActivity() {
         SetupState.setOnboardingComplete(this, true)
 
         if (autoInstall) {
+            val platformTag = setupFragment.getSelectedPlatform()?.category ?: ""
+            val jdkTag = setupFragment.getSelectedJdk()?.category ?: ""
+            val ndkTag = setupFragment.getSelectedNdk()?.category ?: ""
+
             val intent = Intent(this, SetupActivity::class.java).apply {
-                putExtra(SetupActivity.EXTRA_SDK_VERSION, setupFragment.getSelectedSdkVersion())
-                putExtra(SetupActivity.EXTRA_JDK_VERSION, setupFragment.getSelectedJdkVersion())
+                putExtra(SetupActivity.EXTRA_PLATFORM_TAG, platformTag)
+                putExtra(SetupActivity.EXTRA_JDK_TAG, jdkTag)
+                putExtra(SetupActivity.EXTRA_NDK_TAG, ndkTag)
             }
             startActivity(intent)
         } else {

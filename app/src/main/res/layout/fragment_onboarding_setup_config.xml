@@ -24,12 +24,11 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Choose SDK, JDK, and optional packages"
+            android:text="Select versions to install"
             android:textSize="14sp"
             android:textColor="?attr/colorOnSurfaceVariant"
             android:layout_marginBottom="16dp" />
 
-        <!-- Network Status -->
         <TextView
             android:id="@+id/network_status"
             android:layout_width="wrap_content"
@@ -38,7 +37,7 @@
             android:textSize="12sp"
             android:layout_marginBottom="8dp" />
 
-        <!-- Loading indicator -->
+        <!-- Loading -->
         <LinearLayout
             android:id="@+id/loading_container"
             android:layout_width="match_parent"
@@ -57,12 +56,12 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Preparing configuration..."
+                android:text="Loading manifest..."
                 android:textSize="14sp"
                 android:textColor="?attr/colorOnSurfaceVariant" />
         </LinearLayout>
 
-        <!-- Error state -->
+        <!-- Error -->
         <LinearLayout
             android:id="@+id/error_container"
             android:layout_width="match_parent"
@@ -89,7 +88,7 @@
                 style="@style/Widget.Material3.Button.OutlinedButton" />
         </LinearLayout>
 
-        <!-- Configuration options -->
+        <!-- Spinners + Switch -->
         <LinearLayout
             android:id="@+id/resources_container"
             android:layout_width="match_parent"
@@ -97,7 +96,7 @@
             android:orientation="vertical"
             android:visibility="gone">
 
-            <!-- SDK Version -->
+            <!-- Platform -->
             <com.google.android.material.textview.MaterialTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -111,7 +110,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-                android:hint="SDK Version"
+                android:hint="Platform"
                 android:layout_marginBottom="16dp">
 
                 <AutoCompleteTextView
@@ -121,7 +120,7 @@
                     android:inputType="none" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- JDK Version -->
+            <!-- JDK -->
             <com.google.android.material.textview.MaterialTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -145,7 +144,7 @@
                     android:inputType="none" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- NDK Version -->
+            <!-- NDK -->
             <com.google.android.material.textview.MaterialTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -169,43 +168,15 @@
                     android:inputType="none" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Optional packages -->
-            <com.google.android.material.textview.MaterialTextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Optional Packages"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="?attr/colorOnSurface"
-                android:layout_marginBottom="8dp" />
-
-            <CheckBox
-                android:id="@+id/install_git_checkbox"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Install Git"
-                android:textSize="14sp"
-                android:layout_marginBottom="4dp" />
-
-            <CheckBox
-                android:id="@+id/install_openssh_checkbox"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Install OpenSSH"
-                android:textSize="14sp"
-                android:layout_marginBottom="16dp" />
-
         </LinearLayout>
 
-        <!-- Auto Install -->
         <com.google.android.material.materialswitch.MaterialSwitch
             android:id="@+id/auto_install_switch"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Auto-install selected resources"
             android:checked="true"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="8dp" />
+            android:layout_marginTop="8dp" />
 
     </LinearLayout>
 </ScrollView>

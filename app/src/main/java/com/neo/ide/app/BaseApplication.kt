@@ -45,7 +45,6 @@ import java.io.File
 /**
  * Base application class.
  * Initializes environment, paths, and global state on startup.
- * Adapted from AndroidIDE's BaseApplication.
  */
 open class BaseApplication : Application() {
 

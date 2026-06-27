@@ -1,39 +1,3 @@
-/**
- * ╔══════════════════════════════════════════════════════════════╗
- * ║                    CODE-IDE • NeoMods                      ║
- * ║                  Advanced Android IDE Project              ║
- * ╚══════════════════════════════════════════════════════════════╝
- *
- *  (っ◔◡◔)っ ♥
- *
- *  Developer         • NeoMods
- *  Telegram Contact  • @NeoModsDev
- *  Telegram Channel  • https://t.me/NeoModsChannel
- *
- * ──────────────────────────────────────────────────────────────
- *  PROJECT NOTICE
- * ──────────────────────────────────────────────────────────────
- *
- *  This source file is part of the CODE-IDE project.
- *
- *  Unauthorized copying, extraction, redistribution,
- *  mirroring, downloading, modification, or reuse of
- *  CODE-IDE source files is NOT permitted without
- *  explicit permission from the developer.
- *
- *  The application may expose certain components in
- *  read-only mode for educational or preview purposes,
- *  however this DOES NOT grant permission to reuse
- *  or redistribute the source code.
- *
- *  If you need access to the original source code,
- *  implementation details, licensing, or collaboration,
- *  please contact the developer directly.
- *
- *  © NeoMods — All Rights Reserved
- * ──────────────────────────────────────────────────────────────
- */
-
 package com.neo.ide.setup
 
 import android.content.Intent
@@ -46,7 +10,6 @@ import android.text.style.ForegroundColorSpan
 import android.view.View
 import android.widget.ScrollView
 import android.widget.TextView
-import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.neo.ide.R
 import com.neo.ide.activities.HomeActivity
@@ -60,8 +23,9 @@ import kotlinx.coroutines.launch
 class SetupActivity : BaseActivity() {
 
     companion object {
-        const val EXTRA_SDK_VERSION = "sdk_version"
-        const val EXTRA_JDK_VERSION = "jdk_version"
+        const val EXTRA_PLATFORM_TAG = "platform_tag"
+        const val EXTRA_JDK_TAG = "jdk_tag"
+        const val EXTRA_NDK_TAG = "ndk_tag"
     }
 
     private lateinit var logText: TextView
@@ -73,7 +37,6 @@ class SetupActivity : BaseActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private val scope = CoroutineScope(Dispatchers.Main + Job())
     private val logBuilder = SpannableStringBuilder()
-    private var lineCount = 0
 
     override fun bindLayout(): View {
         return layoutInflater.inflate(R.layout.activity_setup, null)
@@ -105,53 +68,59 @@ class SetupActivity : BaseActivity() {
     private fun startSetup() {
         val installer = SetupInstaller(this)
 
+        val platformTag = intent.getStringExtra(EXTRA_PLATFORM_TAG) ?: ""
+        val jdkTag = intent.getStringExtra(EXTRA_JDK_TAG) ?: ""
+        val ndkTag = intent.getStringExtra(EXTRA_NDK_TAG) ?: ""
+
         scope.launch {
-            installer.runSetup(object : SetupInstaller.SetupListener {
-                override fun onProgress(progress: SetupInstaller.SetupProgress) {
-                    handler.post {
-                        when {
-                            progress.isComplete -> {
-                                appendLog("", LogColor.DIM)
-                                appendLog("✓ ${progress.message}", LogColor.SUCCESS)
-                                statusText.text = "Setup complete"
-                                progressBar.isIndeterminate = false
-                                progressBar.progress = 100
-                                progressText.text = ""
-                                finishSetup()
-                            }
-                            progress.isError -> {
-                                appendLog("✗ ${progress.message}", LogColor.ERROR)
-                                statusText.text = "Setup failed"
-                                progressBar.isIndeterminate = false
-                                progressBar.progress = 0
-                                progressText.text = progress.message
-                            }
-                            progress.progress >= 0f -> {
-                                statusText.text = progress.message
-                                progressBar.isIndeterminate = false
-                                progressBar.progress = (progress.progress * 100).toInt()
-                                val pct = (progress.progress * 100).toInt()
-                                progressText.text = "$pct%"
-                            }
-                            else -> {
-                                statusText.text = progress.message
-                                appendLog("→ ${progress.message}", LogColor.INFO)
+            installer.runSetup(
+                platformCategory = platformTag,
+                jdkCategory = jdkTag,
+                ndkCategory = ndkTag,
+                listener = object : SetupInstaller.SetupListener {
+                    override fun onProgress(progress: SetupInstaller.SetupProgress) {
+                        handler.post {
+                            when {
+                                progress.isComplete -> {
+                                    appendLog("", LogColor.DIM)
+                                    appendLog("✓ ${progress.message}", LogColor.SUCCESS)
+                                    statusText.text = "Setup complete"
+                                    progressBar.isIndeterminate = false
+                                    progressBar.progress = 100
+                                    progressText.text = ""
+                                    finishSetup()
+                                }
+                                progress.isError -> {
+                                    appendLog("✗ ${progress.message}", LogColor.ERROR)
+                                    statusText.text = "Setup failed"
+                                    progressBar.isIndeterminate = false
+                                    progressBar.progress = 0
+                                    progressText.text = progress.message
+                                }
+                                progress.progress >= 0f -> {
+                                    statusText.text = progress.message
+                                    progressBar.isIndeterminate = false
+                                    progressBar.progress = (progress.progress * 100).toInt()
+                                    progressText.text = "${(progress.progress * 100).toInt()}%"
+                                }
+                                else -> {
+                                    statusText.text = progress.message
+                                    appendLog("→ ${progress.message}", LogColor.INFO)
+                                }
                             }
                         }
                     }
                 }
-            })
+            )
         }
     }
 
     private fun appendLog(text: String, color: LogColor) {
         if (text.isEmpty()) {
             logBuilder.append("\n")
-            lineCount++
             updateLog()
             return
         }
-
         val start = logBuilder.length
         logBuilder.append(text)
         logBuilder.append("\n")
@@ -161,15 +130,12 @@ class SetupActivity : BaseActivity() {
             start + text.length,
             Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
         )
-        lineCount++
         updateLog()
     }
 
     private fun updateLog() {
         logText.text = logBuilder
-        handler.postDelayed({
-            logScroll.fullScroll(View.FOCUS_DOWN)
-        }, 50)
+        handler.postDelayed({ logScroll.fullScroll(View.FOCUS_DOWN) }, 50)
     }
 
     private fun finishSetup() {

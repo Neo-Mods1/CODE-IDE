@@ -104,7 +104,7 @@ class TerminalSetupActivity : BaseActivity(), TerminalSessionClient {
                     val downEvent = KeyEvent(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), KeyEvent.ACTION_DOWN, keyCode, 0, modifiers)
                     val upEvent = KeyEvent(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, keyCode, 0, modifiers)
                     // Use direct onKeyDown/onKeyUp instead of dispatchKeyEvent to avoid focus issues
-                    terminalView.onKeyDown(keyCode, downEvent, session)
+                    terminalView.onKeyDown(keyCode, downEvent)
                     terminalView.onKeyUp(keyCode, upEvent)
                 } else if (key.length == 1) {
                     session.write(key.toByteArray(), 0, key.toByteArray().size)
@@ -331,7 +331,6 @@ class TerminalSetupActivity : BaseActivity(), TerminalSessionClient {
 
     override fun onResume() {
         super.onResume()
-        terminalView.onResume()
         handler.postDelayed({
             if (currentSession != null) {
                 terminalView.requestFocus()
@@ -343,7 +342,6 @@ class TerminalSetupActivity : BaseActivity(), TerminalSessionClient {
 
     override fun onPause() {
         super.onPause()
-        terminalView.onPause()
         val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
         imm.hideSoftInputFromWindow(terminalView.windowToken, 0)
     }

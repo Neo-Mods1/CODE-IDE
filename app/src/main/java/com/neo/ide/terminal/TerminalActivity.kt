@@ -232,7 +232,7 @@ class TerminalActivity : BaseActivity(), TerminalSessionClient {
             val downEvent = KeyEvent(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), KeyEvent.ACTION_DOWN, keyCode, 0, metaState)
             val upEvent = KeyEvent(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, keyCode, 0, metaState)
             // Use direct onKeyDown/onKeyUp instead of dispatchKeyEvent to avoid focus issues
-            terminalView.onKeyDown(keyCode, downEvent, session)
+            terminalView.onKeyDown(keyCode, downEvent)
             terminalView.onKeyUp(keyCode, upEvent)
         } else if (key.length == 1) {
             val bytes = key.toByteArray(Charsets.UTF_8)
@@ -290,7 +290,6 @@ class TerminalActivity : BaseActivity(), TerminalSessionClient {
 
     override fun onResume() {
         super.onResume()
-        terminalView.onResume()
         // Show keyboard when resuming if terminal has focus
         handler.postDelayed({
             if (currentSession != null) {
@@ -303,7 +302,6 @@ class TerminalActivity : BaseActivity(), TerminalSessionClient {
 
     override fun onPause() {
         super.onPause()
-        terminalView.onPause()
         // Hide keyboard when pausing
         val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
         imm.hideSoftInputFromWindow(terminalView.windowToken, 0)

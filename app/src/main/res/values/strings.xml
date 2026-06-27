@@ -153,8 +153,6 @@
     <string name="action_cancel">Cancel</string>
     <string name="title_report_text">Report</string>
 
-</resources>
-
     <!-- Template names -->
     <string name="template_basic">Basic Activity</string>
     <string name="template_empty">Empty Activity</string>
@@ -169,3 +167,5 @@
     <string name="msg_value_empty">This field cannot be empty</string>
     <string name="msg_package_is_not_valid">Package name is not valid</string>
     <string name="msg_project_dir_exists">Project directory already exists</string>
+
+</resources>

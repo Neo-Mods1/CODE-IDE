@@ -14,4 +14,23 @@
     <string name="wizard_save_location">Save Location</string>
     <string name="wizard_module_name">Module Name</string>
     <string name="wizard_module_type">Module Type</string>
+
+    <string name="tpl_project_name">Project Name</string>
+    <string name="package_name">Package Name</string>
+    <string name="save_location">Save Location</string>
+    <string name="language">Language</string>
+    <string name="min_sdk">Min SDK</string>
+    <string name="target_sdk">Target SDK</string>
+    <string name="compile_sdk">Compile SDK</string>
+    <string name="use_kts">Use Kotlin DSL</string>
+    <string name="invalid_project_name">Please enter a valid project name</string>
+    <string name="invalid_package_name">Please enter a valid package name</string>
+    <string name="project_already_exists">A project with this name already exists</string>
+    <string name="project_created">Project created successfully</string>
+    <string name="project_creation_failed">Failed to create project</string>
+    <string name="create_project">Create project</string>
+    <string name="exit">Exit</string>
+    <string name="new_project">New project</string>
+    <string name="previous">Previous</string>
+    <string name="finish">Finish</string>
 </resources>

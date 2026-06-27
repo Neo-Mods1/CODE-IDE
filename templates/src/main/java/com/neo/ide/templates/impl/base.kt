@@ -34,7 +34,25 @@
  * ──────────────────────────────────────────────────────────────
  */
 
+/*
+ *  This file is part of AndroidIDE.
+ *
+ *  AndroidIDE is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  AndroidIDE is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *   along with AndroidIDE.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.neo.ide.templates.impl
+
 import com.neo.ide.templates.api.BooleanParameter
 import com.neo.ide.templates.api.EnumParameter
 import com.neo.ide.templates.api.Language
@@ -51,6 +69,10 @@ import com.neo.ide.templates.api.packageNameParameter
 import com.neo.ide.templates.api.projectLanguageParameter
 import com.neo.ide.templates.api.projectNameParameter
 import com.neo.ide.templates.api.useKtsParameter
+
+/**
+ * Indents the given string for the given [indentation level][level].
+ */
 fun String.indentToLevel(level: Int): String {
   val lines = split(Regex("[\r\n]"))
   return StringBuilder().apply {
@@ -60,12 +82,14 @@ fun String.indentToLevel(level: Int): String {
     }
   }.toString()
 }
+
 @Suppress("UnusedReceiverParameter")
 internal fun AndroidModuleTemplateBuilder.templateAsset(name: String,
                                                         path: String
 ): String {
   return "templates/${name}/${path}"
 }
+
 internal inline fun baseProjectImpl(
   projectName: StringParameter = projectNameParameter(),
   packageName: StringParameter = packageNameParameter(),
@@ -79,6 +103,7 @@ internal inline fun baseProjectImpl(
     useKts = useKts, minSdk = minSdk, language = language,
     projectVersionData = projectVersionData) {
     block()
+
     // make sure we return a proper result
     if (!isRecipeSet) {
       recipe = createRecipe {}

@@ -46,8 +46,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.textview.MaterialTextView
-import com.neo.ide.R
-import com.neo.ide.project.ProjectGenerator
+import com.neo.ide.templates.R
+import com.neo.ide.templates.ProjectGenerator
 
 class TemplateDetailsFragment : Fragment() {
 

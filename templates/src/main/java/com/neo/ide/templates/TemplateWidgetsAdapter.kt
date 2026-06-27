@@ -48,7 +48,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
-import com.neo.ide.R
+import com.neo.ide.templates.R
 
 class TemplateWidgetsAdapter(
     private val widgets: List<TemplateWidget>,

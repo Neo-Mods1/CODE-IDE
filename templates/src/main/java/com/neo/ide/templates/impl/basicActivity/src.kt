@@ -34,18 +34,39 @@
  * ──────────────────────────────────────────────────────────────
  */
 
+/*
+ *  This file is part of AndroidIDE.
+ *
+ *  AndroidIDE is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  AndroidIDE is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *   along with AndroidIDE.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.neo.ide.templates.impl.basicActivity
+
 import com.neo.ide.templates.api.base.AndroidModuleTemplateBuilder
 import com.neo.ide.templates.impl.base.baseLayoutContentMain
 import com.neo.ide.templates.impl.base.materialAppBar
 import com.neo.ide.templates.impl.base.materialFab
 import com.neo.ide.templates.impl.indentToLevel
+
 internal fun AndroidModuleTemplateBuilder.basicActivitySrcJava() = """
 package ${data.packageName};
+
 import android.os.Bundle;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import ${data.packageName}.databinding.ActivityMainBinding;
+
 public class MainActivity extends AppCompatActivity {
 	
 	  private ActivityMainBinding binding;
@@ -57,6 +78,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
         
 		    setSupportActionBar(binding.toolbar);
+
 		    binding.fab.setOnClickListener(v ->
           Toast.makeText(MainActivity.this, "Replace with your action", Toast.LENGTH_SHORT).show()
         );
@@ -69,12 +91,15 @@ public class MainActivity extends AppCompatActivity {
     }
 }
 """.trim()
+
 internal fun AndroidModuleTemplateBuilder.basicActivitySrcKt() = """
 package ${data.packageName}
+
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import ${data.packageName}.databinding.ActivityMainBinding
+
 public class MainActivity : AppCompatActivity() {
     
     private var _binding: ActivityMainBinding? = null
@@ -100,6 +125,7 @@ public class MainActivity : AppCompatActivity() {
     }
 }
   """.trim()
+
 internal fun basicActivityLayout() = """
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -112,7 +138,10 @@ internal fun basicActivityLayout() = """
     ${materialAppBar().indentToLevel(1)}
     
     <include layout="@layout/content_main"/>
+
     ${materialFab().indentToLevel(1)}
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
 """.trim()
+
 internal fun basicActivityContent() = baseLayoutContentMain()

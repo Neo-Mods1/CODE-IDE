@@ -40,4 +40,18 @@ dependencies {
     implementation("androidx.core:core-ktx:${v.getProperty("coreKtxVersion")}")
     implementation("androidx.appcompat:appcompat:${v.getProperty("appcompatVersion")}")
     implementation("androidx.annotation:annotation:${v.getProperty("annotationVersion")}")
+
+    implementation("com.itsaky.androidide.build:java-compiler")
+    implementation("com.itsaky.androidide.build:jdk-compiler")
+    implementation("com.itsaky.androidide.build:jaxp")
+    implementation("com.itsaky.androidide.build:layoutlib-api")
+
+    implementation("com.blankj:utilcodex:${v.getProperty("blankjVersion")}")
+    implementation("com.github.javaparser:javaparser-symbol-solver-core:${v.getProperty("javaParserVersion")}")
+    implementation("com.android.tools:common:${v.getProperty("androidToolsVersion")}")
+    implementation("com.android.tools:annotations:${v.getProperty("androidToolsAnnotationsVersion")}")
+    implementation("com.android.tools.build:aapt2-proto:${v.getProperty("aapt2ProtoVersion")}")
+    implementation("com.google.guava:guava:${v.getProperty("guavaVersion")}")
+
+    implementation(project(":tooling"))
 }

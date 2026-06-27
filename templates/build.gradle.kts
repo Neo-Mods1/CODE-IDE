@@ -30,10 +30,15 @@ android {
 dependencies {
     implementation("com.squareup:javapoet:${v.getProperty("javaPoetVersion")}")
     implementation("org.greenrobot:eventbus:${v.getProperty("eventBusVersion")}")
+    implementation("com.google.auto.service:auto-service:${v.getProperty("autoServiceVersion", "1.1.1")}")
+    annotationProcessor("com.google.auto.service:auto-service:${v.getProperty("autoServiceVersion", "1.1.1")}")
 
     implementation("androidx.core:core-ktx:${v.getProperty("coreKtxVersion")}")
     implementation("androidx.appcompat:appcompat:${v.getProperty("appcompatVersion")}")
     implementation("com.google.android.material:material:${v.getProperty("materialVersion")}")
     implementation("androidx.annotation:annotation:${v.getProperty("annotationVersion")}")
     implementation("androidx.constraintlayout:constraintlayout:${v.getProperty("constraintLayoutVersion")}")
+    
+    implementation(project(":tooling"))
+    implementation("com.itsaky.androidide.build:java-compiler")
 }

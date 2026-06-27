@@ -18,6 +18,15 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "CODE-IDE"
+
+includeBuild("composite-builds") {
+    name.dependencySubstitution {
+        substitute(module("com.itsaky.androidide.build:java-compiler")).using(project(":java-compiler"))
+        substitute(module("com.itsaky.androidide.build:jdk-compiler")).using(project(":jdk-compiler"))
+        substitute(module("com.itsaky.androidide.build:jaxp")).using(project(":jaxp"))
+    }
+}
+
 include(":app")
 include(":editor")
 include(":lsp")

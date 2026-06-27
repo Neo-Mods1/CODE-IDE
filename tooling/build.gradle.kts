@@ -45,4 +45,8 @@ dependencies {
 
     implementation("com.google.guava:guava:${v.getProperty("guavaVersion")}")
     implementation("com.google.auto:auto-common:1.2.2")
+
+    implementation("com.itsaky.androidide.build:java-compiler")
+    implementation("com.itsaky.androidide.build:jdk-compiler")
+    implementation("com.itsaky.androidide.build:jaxp")
 }

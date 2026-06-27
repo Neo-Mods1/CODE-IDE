@@ -33,8 +33,9 @@ android {
 
 dependencies {
     // Sora Editor
-    implementation("io.github.Rosemoe.sora-editor:editor:${v.getProperty("soraEditorVersion")}")
-    implementation("io.github.Rosemoe.sora-editor:language-textmate:${v.getProperty("soraEditorVersion")}")
+    implementation(platform("io.github.rosemoe:editor-bom:${v.getProperty("soraEditorVersion")}"))
+    implementation("io.github.rosemoe:editor")
+    implementation("io.github.rosemoe:language-textmate")
 
     // Tree-sitter
     implementation("com.itsaky.androidide.treesitter:android-tree-sitter:${v.getProperty("treeSitterVersion")}")

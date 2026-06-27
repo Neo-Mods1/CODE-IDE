@@ -1,39 +1,3 @@
-/**
- * ╔══════════════════════════════════════════════════════════════╗
- * ║                    CODE-IDE • NeoMods                      ║
- * ║                  Advanced Android IDE Project              ║
- * ╚══════════════════════════════════════════════════════════════╝
- *
- *  (っ◔◡◔)っ ♥
- *
- *  Developer         • NeoMods
- *  Telegram Contact  • @NeoModsDev
- *  Telegram Channel  • https://t.me/NeoModsChannel
- *
- * ──────────────────────────────────────────────────────────────
- *  PROJECT NOTICE
- * ──────────────────────────────────────────────────────────────
- *
- *  This source file is part of the CODE-IDE project.
- *
- *  Unauthorized copying, extraction, redistribution,
- *  mirroring, downloading, modification, or reuse of
- *  CODE-IDE source files is NOT permitted without
- *  explicit permission from the developer.
- *
- *  The application may expose certain components in
- *  read-only mode for educational or preview purposes,
- *  however this DOES NOT grant permission to reuse
- *  or redistribute the source code.
- *
- *  If you need access to the original source code,
- *  implementation details, licensing, or collaboration,
- *  please contact the developer directly.
- *
- *  © NeoMods — All Rights Reserved
- * ──────────────────────────────────────────────────────────────
- */
-
 package com.neo.ide.project
 
 import com.neo.ide.templates.ProjectTemplate
@@ -58,22 +22,37 @@ class ProjectGenerator(
 
     fun generate(): Result<Unit> {
         return try {
+            // Create root directory
             projectDir.mkdirs()
 
+            // Create app module directory structure
+            val appDir = File(projectDir, "app")
+            val appSrcDir = File(appDir, "src/main")
+            val appJavaDir = File(appSrcDir, "java/$packagePath")
+            val appResDir = File(appSrcDir, "res")
+            val layoutDir = File(appResDir, "layout")
+            val valuesDir = File(appResDir, "values")
+            val drawableDir = File(appResDir, "drawable")
+            val mipmapDir = File(appResDir, "mipmap-hdpi")
+
+            listOf(appDir, appSrcDir, appJavaDir, appResDir, layoutDir, valuesDir, drawableDir, mipmapDir).forEach { it.mkdirs() }
+
+            // Generate root project files
             generateRootBuildGradle()
             generateSettingsGradle()
             generateGradleProperties()
             generateGradleWrapper()
             generateGitignore()
 
+            // Generate app module files
+            generateAppBuildGradle(appDir)
+            generateProguardRules(appDir)
+            generateManifest(appSrcDir)
+            generateStringsXml(valuesDir)
+
             if (template.hasActivity) {
-                generateAppBuildGradle()
-                generateMainActivity()
-                generateLayouts()
-                generateManifest()
-            } else {
-                generateLibraryBuildGradle()
-                generateManifest()
+                generateMainActivity(appJavaDir)
+                generateLayouts(layoutDir)
             }
 
             Result.success(Unit)
@@ -181,7 +160,7 @@ local.properties
 """.trimIndent())
     }
 
-    private fun generateAppBuildGradle() {
+    private fun generateAppBuildGradle(appDir: File) {
         val kotlinPlugin = if (isKotlin) """    id("kotlin-android")""" else ""
         val kotlinComposePlugin = if (isCompose) """    id("org.jetbrains.kotlin.plugin.compose")""" else ""
 
@@ -268,84 +247,133 @@ android {
 $dependencies
 """.trimIndent()
 
-        File(projectDir, "app/build.gradle.$ext").writeText(content)
+        File(appDir, "build.gradle.$ext").writeText(content)
     }
 
-    private fun generateLibraryBuildGradle() {
-        val kotlinPlugin = if (isKotlin) """    id("kotlin-android")""" else ""
+    private fun generateProguardRules(appDir: File) {
+        File(appDir, "proguard-rules.pro").writeText("""
+# Add project specific ProGuard rules here.
+# You can control the set of applied configuration files using the
+# proguardFiles setting in build.gradle.kts.
+#
+# For more details, see
+#   http://developer.android.com/guide/developing/tools/proguard.html
 
-        val content = """
-plugins {
-    id("com.android.library")$kotlinPlugin
-}
+# If your project uses WebView with JS, uncomment the following
+# and specify the fully qualified class name to the JavaScript interface
+# class:
+#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
+#   public *;
+#}
 
-android {
-    namespace = "$packageName"
-    compileSdk = $compileSdk
+# Uncomment this to preserve the line number information for
+# debugging stack traces.
+#-keepattributes SourceFile,LineNumberTable
 
-    defaultConfig {
-        minSdk = $minSdk
-
-        consumerProguardFiles("consumer-rules.pro")
+# If you keep the line number information, uncomment this to
+# hide the original source file name.
+#-renameSourcefileattribute SourceFile
+""".trimIndent())
     }
 
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-        }
+    private fun generateManifest(appSrcDir: File) {
+        val activityName = if (template.hasActivity) ".${className()}" else ""
+        val mainIntent = if (template.hasActivity) """
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>""" else ""
+
+        val content = """<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.$projectName">
+        <activity
+            android:name="$activityName"
+            android:exported="true"$mainIntent>
+        </activity>
+    </application>
+
+</manifest>
+"""
+
+        File(appSrcDir, "AndroidManifest.xml").writeText(content)
     }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-}
 
-dependencies {
-    implementation("androidx.core:core-ktx:1.12.0")
-}
-""".trimIndent()
-
-        File(projectDir, "app/build.gradle.$ext").writeText(content)
+    private fun generateStringsXml(valuesDir: File) {
+        val content = """<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">$projectName</string>
+</resources>
+"""
+        File(valuesDir, "strings.xml").writeText(content)
     }
 
-    private fun generateMainActivity() {
-        val appDir = File(projectDir, "app/src/main/java/$packagePath")
-        appDir.mkdirs()
-
+    private fun generateMainActivity(dir: File) {
         val actClassName = className()
 
         when (template.activityType) {
-            ProjectTemplate.ActivityType.COMPOSE -> generateComposeActivity(appDir, actClassName)
-            ProjectTemplate.ActivityType.EMPTY -> generateSimpleActivity(appDir, actClassName)
-            ProjectTemplate.ActivityType.BASIC -> generateBasicActivity(appDir, actClassName)
-            ProjectTemplate.ActivityType.NAV_DRAWER -> generateNavDrawerActivity(appDir, actClassName)
-            ProjectTemplate.ActivityType.BOTTOM_NAV -> generateBottomNavActivity(appDir, actClassName)
-            ProjectTemplate.ActivityType.TABBED -> generateTabbedActivity(appDir, actClassName)
+            ProjectTemplate.ActivityType.COMPOSE -> generateComposeActivity(dir, actClassName)
+            ProjectTemplate.ActivityType.EMPTY -> generateSimpleActivity(dir, actClassName)
+            ProjectTemplate.ActivityType.BASIC -> generateSimpleActivity(dir, actClassName)
+            ProjectTemplate.ActivityType.NAV_DRAWER -> generateSimpleActivity(dir, actClassName)
+            ProjectTemplate.ActivityType.BOTTOM_NAV -> generateSimpleActivity(dir, actClassName)
+            ProjectTemplate.ActivityType.TABBED -> generateSimpleActivity(dir, actClassName)
             ProjectTemplate.ActivityType.NONE -> { /* No activity */ }
         }
     }
 
     private fun generateSimpleActivity(dir: File, className: String) {
-        val lang = if (isKotlin) "kotlin" else "java"
-        val importViewBinding = if (!isCompose) "\nimport $packageName.databinding.ActivityMainBinding" else ""
-        val extendAppCompatActivity = if (isCompose) "ComponentActivity()" else "AppCompatActivity()"
-
         if (isKotlin) {
             File(dir, "$className.kt").writeText("""
 package $packageName
 
 import android.os.Bundle
-$importViewBinding
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 
-class $className : $extendAppCompatActivity() {
-    ${if (!isCompose) "private lateinit var binding: ActivityMainBinding" else ""}
+class $className : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        ${if (!isCompose) """
-binding = ActivityMainBinding.inflate(layoutInflater)
-setContentView(binding.root)""" else """setContentView(R.layout.activity_main)"""}
+        setContent {
+            MaterialTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    Greeting("Android")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun Greeting(name: String, modifier: Modifier = Modifier) {
+    Text(
+        text = "Hello $name!",
+        modifier = modifier
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun GreetingPreview() {
+    MaterialTheme {
+        Greeting("Android")
     }
 }
 """.trimIndent())
@@ -354,91 +382,69 @@ setContentView(binding.root)""" else """setContentView(R.layout.activity_main)""
 package $packageName;
 
 import android.os.Bundle;
-$importViewBinding
 import androidx.appcompat.app.AppCompatActivity;
 
 public class $className extends AppCompatActivity {
-    ${if (!isCompose) "private ActivityMainBinding binding;" else ""}
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        ${if (!isCompose) """
-binding = ActivityMainBinding.inflate(getLayoutInflater());
-setContentView(binding.getRoot());""" else """setContentView(R.layout.activity_main);"""}
+        setContentView(R.layout.activity_main);
     }
 }
 """.trimIndent())
         }
     }
 
-    private fun generateBasicActivity(dir: File, className: String) {
-        generateSimpleActivity(dir, className)
-    }
-
-    private fun generateNavDrawerActivity(dir: File, className: String) {
-        generateSimpleActivity(dir, className)
-    }
-
-    private fun generateBottomNavActivity(dir: File, className: String) {
-        generateSimpleActivity(dir, className)
-    }
-
-    private fun generateTabbedActivity(dir: File, className: String) {
-        generateSimpleActivity(dir, className)
-    }
-
     private fun generateComposeActivity(dir: File, className: String) {
-        val content = "package $packageName\n" +
-            "\n" +
-            "import android.os.Bundle\n" +
-            "import androidx.activity.ComponentActivity\n" +
-            "import androidx.activity.compose.setContent\n" +
-            "import androidx.compose.foundation.layout.fillMaxSize\n" +
-            "import androidx.compose.material3.MaterialTheme\n" +
-            "import androidx.compose.material3.Surface\n" +
-            "import androidx.compose.material3.Text\n" +
-            "import androidx.compose.runtime.Composable\n" +
-            "import androidx.compose.ui.Modifier\n" +
-            "import androidx.compose.ui.tooling.preview.Preview\n" +
-            "\n" +
-            "class $className : ComponentActivity() {\n" +
-            "    override fun onCreate(savedInstanceState: Bundle?) {\n" +
-            "        super.onCreate(savedInstanceState)\n" +
-            "        setContent {\n" +
-            "            MaterialTheme {\n" +
-            "                Surface(\n" +
-            "                    modifier = Modifier.fillMaxSize(),\n" +
-            "                    color = MaterialTheme.colorScheme.background\n" +
-            "                ) {\n" +
-            "                    Greeting(\"Android\")\n" +
-            "                }\n" +
-            "            }\n" +
-            "        }\n" +
-            "    }\n" +
-            "}\n" +
-            "\n" +
-            "@Composable\n" +
-            "fun Greeting(name: String, modifier: Modifier = Modifier) {\n" +
-            "    Text(\n" +
-            "        text = \"Hello \"+\"\$\"+\"name!\",\n" +
-            "        modifier = modifier\n" +
-            "    )\n" +
-            "}\n" +
-            "\n" +
-            "@Preview(showBackground = true)\n" +
-            "@Composable\n" +
-            "fun GreetingPreview() {\n" +
-            "    MaterialTheme {\n" +
-            "        Greeting(\"Android\")\n" +
-            "    }\n" +
-            "}\n"
-        File(dir, "$className.kt").writeText(content)
+        File(dir, "$className.kt").writeText("""
+package $packageName
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+
+class $className : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            MaterialTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    Greeting("Android")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun Greeting(name: String, modifier: Modifier = Modifier) {
+    Text(
+        text = "Hello $name!",
+        modifier = modifier
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun GreetingPreview() {
+    MaterialTheme {
+        Greeting("Android")
+    }
+}
+""".trimIndent())
     }
 
-    private fun generateLayouts() {
-        val resDir = File(projectDir, "app/src/main/res/layout")
-        resDir.mkdirs()
-
+    private fun generateLayouts(layoutDir: File) {
         val layoutName = when (template.activityType) {
             ProjectTemplate.ActivityType.COMPOSE -> return
             ProjectTemplate.ActivityType.NAV_DRAWER -> "activity_main.xml"
@@ -447,7 +453,7 @@ setContentView(binding.getRoot());""" else """setContentView(R.layout.activity_m
             else -> "activity_main.xml"
         }
 
-        File(resDir, layoutName).writeText("""<?xml version="1.0" encoding="utf-8"?>
+        File(layoutDir, layoutName).writeText("""<?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -477,39 +483,6 @@ setContentView(binding.getRoot());""" else """setContentView(R.layout.activity_m
         ProjectTemplate.ActivityType.BOTTOM_NAV -> "BottomNavActivity"
         ProjectTemplate.ActivityType.TABBED -> "TabbedActivity"
         ProjectTemplate.ActivityType.NONE -> ""
-    }
-
-    private fun generateManifest() {
-        val appDir = File(projectDir, "app/src/main")
-        appDir.mkdirs()
-
-        val activityName = if (template.hasActivity) ".${className()}" else ""
-        val mainIntent = if (template.hasActivity) """
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>""" else ""
-
-        val content = """<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <application
-        android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
-        android:supportsRtl="true"
-        android:theme="@style/Theme.$projectName">
-        <activity
-            android:name="$activityName"
-            android:exported="true"$mainIntent>
-        </activity>
-    </application>
-
-</manifest>
-"""
-
-        File(appDir, "AndroidManifest.xml").writeText(content)
     }
 
     private fun getAgpVersion(): String = "8.2.0"

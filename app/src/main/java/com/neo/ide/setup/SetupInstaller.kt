@@ -1,3 +1,39 @@
+/**
+ * ╔══════════════════════════════════════════════════════════════╗
+ * ║                    CODE-IDE • NeoMods                      ║
+ * ║                  Advanced Android IDE Project              ║
+ * ╚══════════════════════════════════════════════════════════════╝
+ *
+ *  (っ◔◡◔)っ ♥
+ *
+ *  Developer         • NeoMods
+ *  Telegram Contact  • @NeoModsDev
+ *  Telegram Channel  • https://t.me/NeoModsChannel
+ *
+ * ──────────────────────────────────────────────────────────────
+ *  PROJECT NOTICE
+ * ──────────────────────────────────────────────────────────────
+ *
+ *  This source file is part of the CODE-IDE project.
+ *
+ *  Unauthorized copying, extraction, redistribution,
+ *  mirroring, downloading, modification, or reuse of
+ *  CODE-IDE source files is NOT permitted without
+ *  explicit permission from the developer.
+ *
+ *  The application may expose certain components in
+ *  read-only mode for educational or preview purposes,
+ *  however this DOES NOT grant permission to reuse
+ *  or redistribute the source code.
+ *
+ *  If you need access to the original source code,
+ *  implementation details, licensing, or collaboration,
+ *  please contact the developer directly.
+ *
+ *  © NeoMods — All Rights Reserved
+ * ──────────────────────────────────────────────────────────────
+ */
+
 package com.neo.ide.setup
 
 import android.content.Context
@@ -69,7 +105,8 @@ class SetupInstaller(private val context: Context) {
         try {
             val homeDir = File(context.filesDir, "home")
             val prefixDir = File(context.filesDir, "usr")
-            ensureDirectories(homeDir, prefixDir)
+            val cacheDir = File(homeDir, ".cache")
+            ensureDirectories(homeDir, prefixDir, cacheDir)
 
             listener.onProgress(SetupProgress("init", "Fetching manifest..."))
             val allResources = fetchManifest(listener)
@@ -80,49 +117,108 @@ class SetupInstaller(private val context: Context) {
             }
 
             val sdkDir = File(homeDir, "android-sdk")
+            val licensesDir = File(homeDir, ".android/licenses")
 
-            // Group by category, pick the first one from each selected category
             val byCategory = allResources.groupBy { it.category }
 
+            // Step 1: Collect all resources to install
+            data class InstallTask(
+                val resource: ResourceEntry,
+                val baseDir: File,
+                val step: String,
+                val name: String
+            )
+
+            val tasks = mutableListOf<InstallTask>()
+
             // Always install: licenses, cmdline-tools, platform-tools, build-tools
-            val alwaysInstall = listOf("licenses", "cmdline_tools", "platform_tools", "build_tools")
-            for (cat in alwaysInstall) {
+            for (cat in listOf("licenses", "cmdline_tools", "platform_tools", "build_tools")) {
                 val resource = byCategory[cat]?.firstOrNull() ?: continue
-                val baseDir = if (cat == "licenses" || cat == "cmdline_tools" || cat == "platform_tools" || cat == "build_tools") sdkDir else prefixDir
-                installResource(resource, baseDir, listener, cat)
+                val baseDir = when (cat) {
+                    "licenses" -> licensesDir.parentFile ?: sdkDir
+                    else -> sdkDir
+                }
+                tasks.add(InstallTask(resource, baseDir, cat, resource.name))
             }
 
-            // Install selected platform (e.g. "platforms" category, pick by tag)
-            if (platformCategory.isNotEmpty()) {
-                val resource = byCategory["platforms"]?.firstOrNull { it.category == platformCategory }
+            // Platform
+            val platformRes = if (platformCategory.isNotEmpty()) {
+                byCategory["platforms"]?.firstOrNull { it.category == platformCategory }
                     ?: byCategory["platforms"]?.firstOrNull()
-                if (resource != null) installResource(resource, sdkDir, listener, "platforms")
             } else {
-                // Default: install first available platform
-                val resource = byCategory["platforms"]?.firstOrNull()
-                if (resource != null) installResource(resource, sdkDir, listener, "platforms")
+                byCategory["platforms"]?.firstOrNull()
+            }
+            if (platformRes != null) {
+                tasks.add(InstallTask(platformRes, sdkDir, "platforms", platformRes.name))
             }
 
-            // Install selected JDK
-            if (jdkCategory.isNotEmpty()) {
-                val resource = byCategory["jdk"]?.firstOrNull { it.category == jdkCategory }
+            // JDK
+            val jdkRes = if (jdkCategory.isNotEmpty()) {
+                byCategory["jdk"]?.firstOrNull { it.category == jdkCategory }
                     ?: byCategory["jdk"]?.firstOrNull()
-                if (resource != null) installResource(resource, prefixDir, listener, "jdk")
             } else {
-                val resource = byCategory["jdk"]?.firstOrNull()
-                if (resource != null) installResource(resource, prefixDir, listener, "jdk")
+                byCategory["jdk"]?.firstOrNull()
+            }
+            if (jdkRes != null) {
+                tasks.add(InstallTask(jdkRes, prefixDir, "jdk", jdkRes.name))
             }
 
-            // Install NDK (skip if empty/null)
+            // NDK (optional)
             if (ndkCategory.isNotEmpty()) {
-                val resource = byCategory["ndk"]?.firstOrNull { it.category == ndkCategory }
+                val ndkRes = byCategory["ndk"]?.firstOrNull { it.category == ndkCategory }
                     ?: byCategory["ndk"]?.firstOrNull()
-                if (resource != null) installResource(resource, sdkDir, listener, "ndk")
+                if (ndkRes != null) {
+                    tasks.add(InstallTask(ndkRes, sdkDir, "ndk", ndkRes.name))
+                }
             }
 
-            // Install gradle if present
-            val gradle = byCategory["gradle"]?.firstOrNull()
-            if (gradle != null) installResource(gradle, prefixDir, listener, "gradle")
+            // Gradle
+            val gradleRes = byCategory["gradle"]?.firstOrNull()
+            if (gradleRes != null) {
+                tasks.add(InstallTask(gradleRes, prefixDir, "gradle", gradleRes.name))
+            }
+
+            // Step 2: Generate licenses (no download needed)
+            val licenseTask = tasks.firstOrNull { it.resource.tag == "sdk-licenses" }
+            if (licenseTask != null) {
+                generateLicenses(licensesDir)
+                tasks.remove(licenseTask)
+                listener.onProgress(SetupProgress("licenses", "SDK licenses installed"))
+            }
+
+            // Step 3: Download ALL archives to cache first
+            val downloadDir = File(cacheDir, "downloads")
+            downloadDir.mkdirs()
+            val downloadedFiles = mutableMapOf<String, File>()
+
+            for (task in tasks) {
+                if (task.resource.url.isEmpty()) continue
+                val archiveFile = File(downloadDir, "${task.resource.tag}.tar.xz")
+                listener.onProgress(SetupProgress(task.step, "Downloading ${task.name}..."))
+                downloadFile(task.resource.url, archiveFile, listener, task.step)
+                downloadedFiles[task.resource.tag] = archiveFile
+            }
+
+            // Step 4: Extract ALL archives (after all downloads complete)
+            for (task in tasks) {
+                if (task.resource.url.isEmpty()) continue
+                val archiveFile = downloadedFiles[task.resource.tag] ?: continue
+                val destDir = task.resource.destination.replace(
+                    "{install_dir}", task.baseDir.absolutePath
+                ).let { File(it) }
+
+                if (destDir.exists() && destDir.listFiles()?.isNotEmpty() == true) {
+                    listener.onProgress(SetupProgress(task.step, "${task.name} already installed, skipping"))
+                    archiveFile.delete()
+                    continue
+                }
+
+                listener.onProgress(SetupProgress(task.step, "Extracting ${task.name}..."))
+                destDir.mkdirs()
+                extractTarXz(archiveFile, destDir)
+                archiveFile.delete()
+                listener.onProgress(SetupProgress(task.step, "${task.name} installed"))
+            }
 
             prefs.edit().putBoolean("setup_complete", true).apply()
             listener.onProgress(SetupProgress("done", "Setup complete!", isComplete = true))
@@ -169,42 +265,6 @@ class SetupInstaller(private val context: Context) {
 
         listener.onProgress(SetupProgress("manifest", "Found ${resources.size} resources"))
         return resources
-    }
-
-    private fun installResource(
-        resource: ResourceEntry,
-        baseDir: File,
-        listener: SetupListener,
-        step: String
-    ) {
-        val destPath = resource.destination.replace("{install_dir}", baseDir.absolutePath)
-        val destDir = File(destPath)
-
-        if (destDir.exists() && destDir.listFiles()?.isNotEmpty() == true) {
-            listener.onProgress(SetupProgress(step, "${resource.name} already installed, skipping"))
-            return
-        }
-
-        if (resource.url.isEmpty()) {
-            if (resource.tag == "sdk-licenses") {
-                generateLicenses(destDir)
-                listener.onProgress(SetupProgress(step, "SDK licenses installed"))
-            }
-            return
-        }
-
-        val cacheDir = File(context.filesDir, "cache")
-        cacheDir.mkdirs()
-        val archiveFile = File(cacheDir, "${resource.tag}.tar.xz")
-
-        downloadFile(resource.url, archiveFile, listener, step)
-
-        listener.onProgress(SetupProgress(step, "Extracting ${resource.name}..."))
-        destDir.mkdirs()
-        extractTarXz(archiveFile, destDir)
-        archiveFile.delete()
-
-        listener.onProgress(SetupProgress(step, "${resource.name} installed"))
     }
 
     private fun downloadFile(url: String, destFile: File, listener: SetupListener, step: String) {
@@ -267,8 +327,8 @@ class SetupInstaller(private val context: Context) {
         }
     }
 
-    private fun generateLicenses(destDir: File) {
-        destDir.mkdirs()
+    private fun generateLicenses(licensesDir: File) {
+        licensesDir.mkdirs()
         val licenses = mapOf(
             "android-sdk-license" to "\nd56f5187479451eabf01fb78af6dfcb131a6481e\n24333f8a63b6825ea9c5514f83c2829b004d1fee",
             "android-sdk-arm-dbt-license" to "\n859f317696f67ef3d7f30a50a5560e7834b43903",
@@ -277,20 +337,22 @@ class SetupInstaller(private val context: Context) {
             "intel-android-extra-license" to "\nd975f751698a77b662f1254ddbeed3901e976f5a"
         )
         for ((name, content) in licenses) {
-            File(destDir, name).writeText(content + "\n")
+            File(licensesDir, name).writeText(content + "\n")
         }
     }
 
-    private fun ensureDirectories(homeDir: File, prefixDir: File) {
+    private fun ensureDirectories(homeDir: File, prefixDir: File, cacheDir: File) {
         listOf(
             homeDir,
             File(homeDir, "tmp"),
             File(homeDir, ".cache"),
+            File(homeDir, ".cache/downloads"),
+            File(homeDir, ".android/licenses"),
             File(homeDir, "android-sdk"),
             File(prefixDir, "bin"),
             File(prefixDir, "opt"),
             File(prefixDir, "etc"),
-            File(context.filesDir, "cache")
+            File(prefixDir, "tmp")
         ).forEach { it.mkdirs() }
     }
 }

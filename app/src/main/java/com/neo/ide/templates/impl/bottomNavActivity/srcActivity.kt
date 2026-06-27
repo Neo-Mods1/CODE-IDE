@@ -1,0 +1,96 @@
+/**
+ * ╔══════════════════════════════════════════════════════════════╗
+ * ║                    CODE-IDE • NeoMods                      ║
+ * ║                  Advanced Android IDE Project              ║
+ * ╚══════════════════════════════════════════════════════════════╝
+ *
+ *  (っ◔◡◔)っ ♥
+ *
+ *  Developer         • NeoMods
+ *  Telegram Contact  • @NeoModsDev
+ *  Telegram Channel  • https://t.me/NeoModsChannel
+ *
+ * ──────────────────────────────────────────────────────────────
+ *  PROJECT NOTICE
+ * ──────────────────────────────────────────────────────────────
+ *
+ *  This source file is part of the CODE-IDE project.
+ *
+ *  Unauthorized copying, extraction, redistribution,
+ *  mirroring, downloading, modification, or reuse of
+ *  CODE-IDE source files is NOT permitted without
+ *  explicit permission from the developer.
+ *
+ *  The application may expose certain components in
+ *  read-only mode for educational or preview purposes,
+ *  however this DOES NOT grant permission to reuse
+ *  or redistribute the source code.
+ *
+ *  If you need access to the original source code,
+ *  implementation details, licensing, or collaboration,
+ *  please contact the developer directly.
+ *
+ *  © NeoMods — All Rights Reserved
+ * ──────────────────────────────────────────────────────────────
+ */
+
+package com.neo.ide.templates.impl.bottomNavActivity
+import com.neo.ide.templates.api.base.AndroidModuleTemplateBuilder
+internal fun AndroidModuleTemplateBuilder.bottomNavActivitySrcKt() = """
+package ${data.packageName}
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import androidx.navigation.findNavController
+import androidx.navigation.ui.AppBarConfiguration
+import androidx.navigation.ui.setupActionBarWithNavController
+import androidx.navigation.ui.setupWithNavController
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import ${data.packageName}.databinding.ActivityMainBinding
+class MainActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityMainBinding
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        val navController = findNavController(R.id.nav_host_fragment_activity_main)
+        // Passing each menu ID as a set of Ids because each
+        // menu should be considered as top level destinations.
+        val appBarConfiguration = AppBarConfiguration(
+            setOf(
+                R.id.navigation_home, R.id.navigation_dashboard, R.id.navigation_notifications
+            )
+        )
+        setupActionBarWithNavController(navController, appBarConfiguration)
+        binding.navView.setupWithNavController(navController)
+    }
+}
+""".trim()
+internal fun AndroidModuleTemplateBuilder.bottomNavActivitySrcJava() = """
+package ${data.packageName};
+import android.os.Bundle;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
+import androidx.navigation.ui.AppBarConfiguration;
+import androidx.navigation.ui.NavigationUI;
+import ${data.packageName}.databinding.ActivityMainBinding;
+public class MainActivity extends AppCompatActivity {
+    private ActivityMainBinding binding;
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+        
+        // Passing each menu ID as a set of Ids because each
+        // menu should be considered as top level destinations.
+        AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(
+                R.id.navigation_home, R.id.navigation_dashboard, R.id.navigation_notifications)
+                .build();
+        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_activity_main);
+        NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
+        NavigationUI.setupWithNavController(binding.navView, navController);
+    }
+}
+""".trim()

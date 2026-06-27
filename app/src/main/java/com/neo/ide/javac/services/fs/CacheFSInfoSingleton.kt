@@ -1,0 +1,83 @@
+/**
+ * ╔══════════════════════════════════════════════════════════════╗
+ * ║                    CODE-IDE • NeoMods                      ║
+ * ║                  Advanced Android IDE Project              ║
+ * ╚══════════════════════════════════════════════════════════════╝
+ *
+ *  (っ◔◡◔)っ ♥
+ *
+ *  Developer         • NeoMods
+ *  Telegram Contact  • @NeoModsDev
+ *  Telegram Channel  • https://t.me/NeoModsChannel
+ *
+ * ──────────────────────────────────────────────────────────────
+ *  PROJECT NOTICE
+ * ──────────────────────────────────────────────────────────────
+ *
+ *  This source file is part of the CODE-IDE project.
+ *
+ *  Unauthorized copying, extraction, redistribution,
+ *  mirroring, downloading, modification, or reuse of
+ *  CODE-IDE source files is NOT permitted without
+ *  explicit permission from the developer.
+ *
+ *  The application may expose certain components in
+ *  read-only mode for educational or preview purposes,
+ *  however this DOES NOT grant permission to reuse
+ *  or redistribute the source code.
+ *
+ *  If you need access to the original source code,
+ *  implementation details, licensing, or collaboration,
+ *  please contact the developer directly.
+ *
+ *  © NeoMods — All Rights Reserved
+ * ──────────────────────────────────────────────────────────────
+ */
+
+
+
+package com.neo.ide.javac.services.fs
+
+import com.neo.ide.utils.VMUtils
+import openjdk.tools.javac.file.CacheFSInfo
+import org.slf4j.LoggerFactory
+import java.nio.file.Path
+
+/**
+ * Singleton class for [CacheFSInfo] to avoid reading attributes of same file multiple times.
+ *
+ * @author Akash Yadav
+ */
+object CacheFSInfoSingleton : CacheFSInfo() {
+
+  const val TEST_PROP_ENABLED_ON_JVM = "ide.testing.javac.fsCache.isEnabledOnJVM"
+  private val log = LoggerFactory.getLogger(CacheFSInfoSingleton::class.java)
+
+  /**
+   * Caches information about the given [Path].
+   */
+  @JvmOverloads
+  fun cache(file: Path, cacheJarClasspath: Boolean = true) {
+
+    if (System.getProperty(TEST_PROP_ENABLED_ON_JVM, null) != "true") {
+      if (VMUtils.isJvm()) {
+        return
+      }
+    }
+
+    try {
+      // Cache canonical path
+      getCanonicalFile(file)
+
+      // Cache attributes
+      getAttributes(file)
+
+      // Cache jar classpath if requested
+      if (cacheJarClasspath) {
+        getJarClassPath(file)
+      }
+    } catch (err: Throwable) {
+      log.warn("Failed to cache jar file: {}", file, err)
+    }
+  }
+}

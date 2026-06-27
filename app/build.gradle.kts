@@ -30,11 +30,12 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-        
-        
+
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+        }
     }
 
-    // Release: splits for per-ABI APKs
     val isRelease = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
     if (isRelease) {
         splits {
@@ -88,15 +89,16 @@ android {
             signingConfig = signingConfigs.findByName("appSigning")
         }
         debug {
-            isMinifyEnabled = true
-            isShrinkResources = true
-            isJniDebuggable = false
+            isMinifyEnabled = false
+            isShrinkResources = false
+            isJniDebuggable = true
             signingConfig = signingConfigs.findByName("appSigning")
         }
     }
 }
 
 dependencies {
+    // Core Android
     implementation("com.google.code.findbugs:jsr305:${v.getProperty("jsr305Version")}")
     implementation("androidx.core:core-ktx:${v.getProperty("coreKtxVersion")}")
     implementation("androidx.appcompat:appcompat:${v.getProperty("appcompatVersion")}")
@@ -121,4 +123,37 @@ dependencies {
     implementation("org.tukaani:xz:${v.getProperty("xzVersion")}")
     implementation("org.json:json:${v.getProperty("jsonVersion")}")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:${v.getProperty("desugarVersion")}")
+
+    // Editor (sora-editor)
+    implementation("io.github.Rosemoe.sora-editor:editor:${v.getProperty("soraEditorVersion")}")
+    implementation("io.github.Rosemoe.sora-editor:language-textmate:${v.getProperty("soraEditorVersion")}")
+
+    // Tree-sitter
+    implementation("com.itsaky.androidide.treesitter:android-tree-sitter:${v.getProperty("treeSitterVersion")}")
+    implementation("com.itsaky.androidide.treesitter:tree-sitter-java:${v.getProperty("treeSitterJavaVersion")}")
+    implementation("com.itsaky.androidide.treesitter:tree-sitter-kotlin:${v.getProperty("treeSitterKotlinVersion")}")
+    implementation("com.itsaky.androidide.treesitter:tree-sitter-json:${v.getProperty("treeSitterJsonVersion")}")
+    implementation("com.itsaky.androidide.treesitter:tree-sitter-xml:${v.getProperty("treeSitterXmlVersion")}")
+    implementation("com.itsaky.androidide.treesitter:tree-sitter-log:${v.getProperty("treeSitterLogVersion")}")
+    implementation("com.itsaky.androidide.treesitter:tree-sitter-html:${v.getProperty("treeSitterHtmlVersion")}")
+    implementation("com.itsaky.androidide.treesitter:tree-sitter-css:${v.getProperty("treeSitterCssVersion")}")
+
+    // LSP4J (JSON-RPC for tooling API and language servers)
+    implementation("org.eclipse.lsp4j:org.eclipse.lsp4j:${v.getProperty("lsp4jVersion")}")
+    implementation("com.google.code.gson:gson:${v.getProperty("gsonVersion")}")
+
+    // EventBus
+    implementation("org.greenrobot:eventbus:${v.getProperty("eventBusVersion")}")
+
+    // SLF4J
+    implementation("org.slf4j:slf4j-api:${v.getProperty("slf4jVersion")}")
+
+    // JavaPoet (for template code generation)
+    implementation("com.squareup:javapoet:${v.getProperty("javaPoetVersion")}")
+
+    // Flexbox
+    implementation("com.google.android.flexbox:flexbox:${v.getProperty("flexboxVersion")}")
+
+    // TabLayout
+    implementation("com.google.android.material:material:${v.getProperty("materialVersion")}")
 }

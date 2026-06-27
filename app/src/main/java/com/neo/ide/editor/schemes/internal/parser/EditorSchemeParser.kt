@@ -1,0 +1,63 @@
+/**
+ * ╔══════════════════════════════════════════════════════════════╗
+ * ║                    CODE-IDE • NeoMods                      ║
+ * ║                  Advanced Android IDE Project              ║
+ * ╚══════════════════════════════════════════════════════════════╝
+ *
+ *  (っ◔◡◔)っ ♥
+ *
+ *  Developer         • NeoMods
+ *  Telegram Contact  • @NeoModsDev
+ *  Telegram Channel  • https://t.me/NeoModsChannel
+ *
+ * ──────────────────────────────────────────────────────────────
+ *  PROJECT NOTICE
+ * ──────────────────────────────────────────────────────────────
+ *
+ *  This source file is part of the CODE-IDE project.
+ *
+ *  Unauthorized copying, extraction, redistribution,
+ *  mirroring, downloading, modification, or reuse of
+ *  CODE-IDE source files is NOT permitted without
+ *  explicit permission from the developer.
+ *
+ *  The application may expose certain components in
+ *  read-only mode for educational or preview purposes,
+ *  however this DOES NOT grant permission to reuse
+ *  or redistribute the source code.
+ *
+ *  If you need access to the original source code,
+ *  implementation details, licensing, or collaboration,
+ *  please contact the developer directly.
+ *
+ *  © NeoMods — All Rights Reserved
+ * ──────────────────────────────────────────────────────────────
+ */
+
+
+
+package com.neo.ide.editor.schemes.internal.parser
+
+import com.google.gson.stream.JsonReader
+import com.neo.ide.editor.schemes.IDEColorScheme
+import com.neo.ide.editor.schemes.internal.parser.SchemeParser.EditorColors
+
+/**
+ * Parses editor scheme from a JSON color scheme file.
+ *
+ * @author Akash Yadav
+ */
+class EditorSchemeParser(private val reader: JsonReader) {
+  
+  fun parse(scheme: IDEColorScheme) {
+    scheme.apply {
+      reader.beginObject()
+      while (reader.hasNext()) {
+        val color = EditorColors.forKey(reader.nextName())
+        val value = reader.nextString()
+        editorScheme[color.id] = parseColorValue(value, false)
+      }
+      reader.endObject()
+    }
+  }
+}

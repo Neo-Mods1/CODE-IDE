@@ -116,7 +116,17 @@
     <string name="invalid_project_name">Invalid project name</string>
     <string name="invalid_package_name">Invalid package name</string>
 
-    <!-- Templates -->
+    <!-- Template Validation Messages -->
+    <string name="msg_package_is_not_valid">Package name is not valid</string>
+    <string name="msg_value_empty">Value cannot be empty</string>
+    <string name="msg_invalid_layout_name">Layout name must contain only lowercase letters, digits, and underscores</string>
+    <string name="msg_path_must_be_dir">Path must be a directory</string>
+    <string name="msg_path_must_be_file">Path must be a file</string>
+    <string name="msg_file_not_exist">File does not exist</string>
+    <string name="msg_invalid_module_name">Invalid module name</string>
+    <string name="msg_classname_with_keywords">Class name cannot be a keyword</string>
+
+    <!-- Template Types -->
     <string name="tpl_empty_activity">Empty Activity</string>
     <string name="tpl_basic_activity">Basic Activity</string>
     <string name="tpl_nav_drawer">Navigation Drawer</string>
@@ -144,3 +154,18 @@
     <string name="title_report_text">Report</string>
 
 </resources>
+
+    <!-- Template names -->
+    <string name="template_basic">Basic Activity</string>
+    <string name="template_empty">Empty Activity</string>
+    <string name="template_navigation_drawer">Navigation Drawer Activity</string>
+    <string name="template_navigation_tabs">Bottom Navigation Activity</string>
+    <string name="template_tabbed">Tabbed Activity</string>
+    <string name="template_no_activity">No Activity</string>
+    <string name="template_no_AndroidX">No AndroidX Activity</string>
+    <string name="template_compose">Compose Activity</string>
+
+    <!-- Template validation messages -->
+    <string name="msg_value_empty">This field cannot be empty</string>
+    <string name="msg_package_is_not_valid">Package name is not valid</string>
+    <string name="msg_project_dir_exists">Project directory already exists</string>

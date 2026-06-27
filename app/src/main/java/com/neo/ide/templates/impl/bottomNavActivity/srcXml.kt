@@ -1,0 +1,62 @@
+/**
+ * ╔══════════════════════════════════════════════════════════════╗
+ * ║                    CODE-IDE • NeoMods                      ║
+ * ║                  Advanced Android IDE Project              ║
+ * ╚══════════════════════════════════════════════════════════════╝
+ *
+ *  (っ◔◡◔)っ ♥
+ *
+ *  Developer         • NeoMods
+ *  Telegram Contact  • @NeoModsDev
+ *  Telegram Channel  • https://t.me/NeoModsChannel
+ *
+ * ──────────────────────────────────────────────────────────────
+ *  PROJECT NOTICE
+ * ──────────────────────────────────────────────────────────────
+ *
+ *  This source file is part of the CODE-IDE project.
+ *
+ *  Unauthorized copying, extraction, redistribution,
+ *  mirroring, downloading, modification, or reuse of
+ *  CODE-IDE source files is NOT permitted without
+ *  explicit permission from the developer.
+ *
+ *  The application may expose certain components in
+ *  read-only mode for educational or preview purposes,
+ *  however this DOES NOT grant permission to reuse
+ *  or redistribute the source code.
+ *
+ *  If you need access to the original source code,
+ *  implementation details, licensing, or collaboration,
+ *  please contact the developer directly.
+ *
+ *  © NeoMods — All Rights Reserved
+ * ──────────────────────────────────────────────────────────────
+ */
+
+package com.neo.ide.templates.impl.bottomNavActivity
+import com.neo.ide.templates.api.base.AndroidModuleTemplateBuilder
+internal fun AndroidModuleTemplateBuilder.bottomNavNavigationXmlSrc() = """
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/navigation_home">
+    <fragment
+        android:id="@+id/navigation_home"
+        android:name="${data.packageName}.ui.home.HomeFragment"
+        android:label="@string/title_home"
+        tools:layout="@layout/fragment_home" />
+    <fragment
+        android:id="@+id/navigation_dashboard"
+        android:name="${data.packageName}.ui.dashboard.DashboardFragment"
+        android:label="@string/title_dashboard"
+        tools:layout="@layout/fragment_dashboard" />
+    <fragment
+        android:id="@+id/navigation_notifications"
+        android:name="${data.packageName}.ui.notifications.NotificationsFragment"
+        android:label="@string/title_notifications"
+        tools:layout="@layout/fragment_notifications" />
+</navigation>
+""".trim()

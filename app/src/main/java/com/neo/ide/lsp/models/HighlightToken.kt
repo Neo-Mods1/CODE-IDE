@@ -1,0 +1,83 @@
+/**
+ * ╔══════════════════════════════════════════════════════════════╗
+ * ║                    CODE-IDE • NeoMods                      ║
+ * ║                  Advanced Android IDE Project              ║
+ * ╚══════════════════════════════════════════════════════════════╝
+ *
+ *  (っ◔◡◔)っ ♥
+ *
+ *  Developer         • NeoMods
+ *  Telegram Contact  • @NeoModsDev
+ *  Telegram Channel  • https://t.me/NeoModsChannel
+ *
+ * ──────────────────────────────────────────────────────────────
+ *  PROJECT NOTICE
+ * ──────────────────────────────────────────────────────────────
+ *
+ *  This source file is part of the CODE-IDE project.
+ *
+ *  Unauthorized copying, extraction, redistribution,
+ *  mirroring, downloading, modification, or reuse of
+ *  CODE-IDE source files is NOT permitted without
+ *  explicit permission from the developer.
+ *
+ *  The application may expose certain components in
+ *  read-only mode for educational or preview purposes,
+ *  however this DOES NOT grant permission to reuse
+ *  or redistribute the source code.
+ *
+ *  If you need access to the original source code,
+ *  implementation details, licensing, or collaboration,
+ *  please contact the developer directly.
+ *
+ *  © NeoMods — All Rights Reserved
+ * ──────────────────────────────────────────────────────────────
+ */
+
+
+
+package com.neo.ide.lsp.models
+
+import com.neo.ide.models.Range
+
+/**
+ * Model class for a syntax highlighting token.
+ * @author Akash Yadav
+ */
+data class HighlightToken(var range: Range, var kind: HighlightTokenKind)
+
+enum class HighlightTokenKind {
+
+  // Common
+  TEXT_NORMAL,
+
+  // Java and Gradle
+  KEYWORD,
+  COMMENT,
+  OPERATOR,
+  LITERAL,
+  LOCAL_VARIABLE,
+  RESOURCE_VARIABLE,
+  PARAMETER,
+  EXCEPTION_PARAMETER,
+  TYPE_PARAMETER,
+  FIELD,
+  STATIC_FIELD,
+  ENUM,
+  TYPE_NAME,
+  ENUM_TYPE,
+  INTERFACE,
+  METHOD_DECLARATION,
+  METHOD_INVOCATION,
+  CONSTRUCTOR,
+  ANNOTATION,
+  STATIC_INIT,
+  INSTANCE_INIT,
+  PACKAGE_NAME,
+
+  // XML
+  TAG_NAME,
+  NAMESPACE,
+  ATTRIBUTE_NAME,
+  ATTRIBUTE_VALUE
+}

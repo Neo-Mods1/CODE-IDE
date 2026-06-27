@@ -45,6 +45,7 @@ import okhttp3.Request
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
+import java.io.RandomAccessFile
 import java.util.concurrent.TimeUnit
 
 class ResumableDownloader(private val context: Context) {
@@ -79,6 +80,16 @@ class ResumableDownloader(private val context: Context) {
         .followSslRedirects(true)
         .build()
 
+    /**
+     * Get the download cache directory: ~/.cache/
+     */
+    private fun getCacheDir(): File {
+        val homeDir = File(context.filesDir, "home")
+        val cacheDir = File(homeDir, ".cache")
+        cacheDir.mkdirs()
+        return cacheDir
+    }
+
     suspend fun download(
         url: String,
         destination: String,
@@ -87,9 +98,6 @@ class ResumableDownloader(private val context: Context) {
     ): Result<File> = withContext(Dispatchers.IO) {
         val destFile = File(destination)
         destFile.parentFile?.mkdirs()
-
-        // Delete any leftover state files from old ResumableDownloader
-        try { File("$destination.state").delete() } catch (_: Exception) {}
 
         try {
             val result = doDownload(url, destFile, expectedSha256, listener)
@@ -107,8 +115,31 @@ class ResumableDownloader(private val context: Context) {
         expectedSha256: String?,
         listener: DownloadListener?
     ): File {
-        val request = Request.Builder().url(url).build()
-        val response = client.newCall(request).execute()
+        val partialFile = File(destFile.parent, "${destFile.name}.partial")
+        val stateFile = File(destFile.parent, "${destFile.name}.state")
+
+        // Resume state: bytes downloaded so far
+        var existingBytes = 0L
+        if (partialFile.exists()) {
+            existingBytes = partialFile.length()
+        }
+
+        val requestBuilder = Request.Builder().url(url)
+        if (existingBytes > 0) {
+            requestBuilder.addHeader("Range", "bytes=${existingBytes}-")
+            Log.d(TAG, "Resuming download from byte $existingBytes")
+        }
+
+        val response = client.newCall(requestBuilder.build()).execute()
+
+        if (response.code == 416) {
+            // Range not satisfiable — file already complete
+            if (partialFile.exists()) {
+                partialFile.renameTo(destFile)
+            }
+            listener?.onComplete(destFile)
+            return destFile
+        }
 
         if (!response.isSuccessful) {
             throw Exception("HTTP ${response.code}: ${response.message}")
@@ -116,26 +147,34 @@ class ResumableDownloader(private val context: Context) {
 
         val body = response.body ?: throw Exception("Empty response body")
         val contentLength = body.contentLength()
+        val isResuming = response.code == 206
 
-        // Always download fresh - no resume
-        if (destFile.exists()) destFile.delete()
+        val totalBytes = if (isResuming) existingBytes + contentLength else contentLength
 
-        FileOutputStream(destFile).use { fos ->
+        val appendMode = isResuming && existingBytes > 0
+        val fos = if (appendMode) {
+            FileOutputStream(partialFile, true) // append mode
+        } else {
+            if (partialFile.exists()) partialFile.delete()
+            FileOutputStream(partialFile)
+        }
+
+        fos.use { out ->
             BufferedInputStream(body.byteStream(), BUFFER_SIZE).use { input ->
                 val buffer = ByteArray(BUFFER_SIZE)
                 var bytesRead: Int
-                var totalRead = 0L
+                var totalRead = existingBytes
                 var lastProgressTime = System.currentTimeMillis()
 
                 while (input.read(buffer).also { bytesRead = it } != -1) {
-                    fos.write(buffer, 0, bytesRead)
+                    out.write(buffer, 0, bytesRead)
                     totalRead += bytesRead
 
                     val now = System.currentTimeMillis()
                     if (now - lastProgressTime >= 250L) {
                         lastProgressTime = now
                         listener?.onProgress(
-                            DownloadState(url, destFile.absolutePath, totalRead, contentLength)
+                            DownloadState(url, destFile.absolutePath, totalRead, totalBytes)
                         )
                     }
                 }
@@ -144,12 +183,19 @@ class ResumableDownloader(private val context: Context) {
 
         // SHA-256 verification if provided
         if (!expectedSha256.isNullOrEmpty()) {
-            val actualSha256 = computeSha256(destFile)
+            val actualSha256 = computeSha256(partialFile)
             if (!actualSha256.equals(expectedSha256, ignoreCase = true)) {
-                destFile.delete()
+                partialFile.delete()
                 throw Exception("SHA-256 mismatch: expected=$expectedSha256 actual=$actualSha256")
             }
         }
+
+        // Move partial to final
+        if (destFile.exists()) destFile.delete()
+        partialFile.renameTo(destFile)
+
+        // Clean up state file
+        stateFile.delete()
 
         listener?.onComplete(destFile)
         return destFile

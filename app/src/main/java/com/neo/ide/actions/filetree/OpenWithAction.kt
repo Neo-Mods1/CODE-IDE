@@ -1,0 +1,65 @@
+/**
+ * ╔══════════════════════════════════════════════════════════════╗
+ * ║                    CODE-IDE • NeoMods                      ║
+ * ║                  Advanced Android IDE Project              ║
+ * ╚══════════════════════════════════════════════════════════════╝
+ *
+ *  (っ◔◡◔)っ ♥
+ *
+ *  Developer         • NeoMods
+ *  Telegram Contact  • @NeoModsDev
+ *  Telegram Channel  • https://t.me/NeoModsChannel
+ *
+ * ──────────────────────────────────────────────────────────────
+ *  PROJECT NOTICE
+ * ──────────────────────────────────────────────────────────────
+ *
+ *  This source file is part of the CODE-IDE project.
+ *
+ *  Unauthorized copying, extraction, redistribution,
+ *  mirroring, downloading, modification, or reuse of
+ *  CODE-IDE source files is NOT permitted without
+ *  explicit permission from the developer.
+ *
+ *  The application may expose certain components in
+ *  read-only mode for educational or preview purposes,
+ *  however this DOES NOT grant permission to reuse
+ *  or redistribute the source code.
+ *
+ *  If you need access to the original source code,
+ *  implementation details, licensing, or collaboration,
+ *  please contact the developer directly.
+ *
+ *  © NeoMods — All Rights Reserved
+ * ──────────────────────────────────────────────────────────────
+ */
+
+
+
+package com.neo.ide.actions.filetree
+
+import android.content.Context
+import android.content.Intent
+import com.neo.ide.actions.ActionData
+import com.neo.ide.actions.requireFile
+import com.neo.ide.resources.R
+import com.neo.ide.utils.IntentUtils
+
+/**
+ * File tree action to open files with external applications.
+ *
+ * @author Akash Yadav
+ */
+class OpenWithAction(context: Context, override val order: Int) :
+  BaseFileTreeAction(
+    context = context,
+    labelRes = R.string.open_with,
+    iconRes = R.drawable.ic_open_with
+  ) {
+
+  override val id: String = "ide.editor.fileTree.openWith"
+
+  override suspend fun execAction(data: ActionData) {
+    IntentUtils.startIntent(data.requireActivity(), data.requireFile(), "*/*", Intent.ACTION_VIEW)
+  }
+}

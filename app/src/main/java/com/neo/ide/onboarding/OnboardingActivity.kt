@@ -19,7 +19,7 @@ import com.neo.ide.R
 import com.neo.ide.activities.MainActivity
 import com.neo.ide.app.BaseActivity
 import com.neo.ide.download.SetupState
-import com.neo.ide.setup.TerminalSetupActivity
+import com.neo.ide.setup.SetupActivity
 
 class OnboardingActivity : BaseActivity() {
 
@@ -151,11 +151,9 @@ class OnboardingActivity : BaseActivity() {
         SetupState.setOnboardingComplete(this, true)
 
         if (autoInstall) {
-            val intent = Intent(this, TerminalSetupActivity::class.java).apply {
-                putExtra(TerminalSetupActivity.EXTRA_SDK_VERSION, setupFragment.getSelectedSdkVersion())
-                putExtra(TerminalSetupActivity.EXTRA_JDK_VERSION, setupFragment.getSelectedJdkVersion())
-                putExtra(TerminalSetupActivity.EXTRA_WITH_GIT, setupFragment.isGitSelected())
-                putExtra(TerminalSetupActivity.EXTRA_WITH_OPENSSH, setupFragment.isOpensshSelected())
+            val intent = Intent(this, SetupActivity::class.java).apply {
+                putExtra(SetupActivity.EXTRA_SDK_VERSION, setupFragment.getSelectedSdkVersion())
+                putExtra(SetupActivity.EXTRA_JDK_VERSION, setupFragment.getSelectedJdkVersion())
             }
             startActivity(intent)
         } else {

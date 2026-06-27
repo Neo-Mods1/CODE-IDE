@@ -8,9 +8,9 @@
 package com.neo.ide.app
 
 import android.app.Application
+import android.util.Log
 import com.neo.ide.BuildConfig
 import com.neo.ide.download.SetupState
-import com.termux.shared.logger.Logger
 import java.io.File
 
 /**
@@ -51,7 +51,7 @@ open class BaseApplication : Application() {
         instance = this
 
         initDirectories()
-        Logger.logInfo("BaseApplication", "CODE-IDE v${BuildConfig.VERSION_NAME} started")
+        Log.i("BaseApplication", "CODE-IDE v${BuildConfig.VERSION_NAME} started")
     }
 
     private fun initDirectories() {
@@ -80,7 +80,7 @@ open class BaseApplication : Application() {
             intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(intent)
         } catch (e: Exception) {
-            Logger.logStackTraceWithMessage("BaseApplication", "Failed to open URL: $url", e)
+            Log.e("BaseApplication", "Failed to open URL: $url", e)
         }
     }
 

@@ -34,16 +34,9 @@ android {
         
     }
 
-    // Debug: arm64 only via ndk.abiFilters
     // Release: splits for per-ABI APKs
     val isRelease = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
-    if (!isRelease) {
-        defaultConfig {
-            ndk {
-                abiFilters += "arm64-v8a"
-            }
-        }
-    } else {
+    if (isRelease) {
         splits {
             abi {
                 isEnable = true
@@ -81,9 +74,6 @@ android {
     }
 
     packaging {
-        jniLibs {
-            useLegacyPackaging = false
-        }
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
@@ -130,11 +120,5 @@ dependencies {
     implementation("org.apache.commons:commons-compress:${v.getProperty("commonsCompressVersion")}")
     implementation("org.tukaani:xz:${v.getProperty("xzVersion")}")
     implementation("org.json:json:${v.getProperty("jsonVersion")}")
-    implementation(project(":termux:view"))
-    implementation(project(":termux:shared"))
-    implementation(project(":termux:application")) {
-        exclude(group = "com.google.guava", module = "listenablefuture")
-    }
-    implementation("com.google.guava:listenablefuture:${v.getProperty("listenablefutureVersion")}")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:${v.getProperty("desugarVersion")}")
 }

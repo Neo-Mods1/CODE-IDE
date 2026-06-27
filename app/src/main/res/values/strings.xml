@@ -54,7 +54,7 @@
     <string name="permission_title_install_packages">Install packages</string>
     <string name="permission_desc_install_packages">Allow installing APKs built with AndroidIDE.</string>
     <string name="permission_title_notifications">Notifications</string>
-    <string name="permission_desc_notifications">Required for terminal service &amp; gradle foreground notification.</string>
+    <string name="permission_desc_notifications">Required for gradle build notifications.</string>
     <string name="onboarding_title_permissions">Permissions</string>
     <string name="onboarding_subtitle_permissions">CODE-IDE requires the following permissions</string>
     <string name="msg_grant_permissions">Please grant the permissions to continue.</string>

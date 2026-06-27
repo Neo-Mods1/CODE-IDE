@@ -45,12 +45,7 @@
             android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize" />
 
         <activity
-            android:name=".setup.TerminalSetupActivity"
-            android:exported="false"
-            android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize" />
-
-        <activity
-            android:name=".terminal.TerminalActivity"
+            android:name=".setup.SetupActivity"
             android:exported="false"
             android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize" />
 
@@ -102,11 +97,6 @@
                 android:resource="@xml/ide_file_provider_paths" />
         </provider>
 
-        <service
-            android:name=".setup.TerminalService"
-            android:exported="false"
-            android:foregroundServiceType="specialUse" />
-        
     </application>
 
 </manifest>

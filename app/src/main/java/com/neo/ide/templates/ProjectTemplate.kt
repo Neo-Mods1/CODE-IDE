@@ -70,7 +70,7 @@ data class ProjectTemplate(
             ProjectTemplate(
                 id = "tabbed_activity",
                 nameRes = com.neo.ide.R.string.tpl_tabbed_activity,
-                iconRes = com.neo.ide.R.drawable.ic_home_terminal,
+                iconRes = com.neo.ide.R.drawable.ic_home_add,
                 description = "An activity with a tab layout and ViewPager",
                 activityType = ActivityType.TABBED
             ),
@@ -93,7 +93,7 @@ data class ProjectTemplate(
             ProjectTemplate(
                 id = "compose_activity",
                 nameRes = com.neo.ide.R.string.tpl_compose_activity,
-                iconRes = com.neo.ide.R.drawable.ic_home_terminal,
+                iconRes = com.neo.ide.R.drawable.ic_home_add,
                 description = "A Jetpack Compose activity with Material 3",
                 language = TemplateLanguage.KOTLIN,
                 activityType = ActivityType.COMPOSE,

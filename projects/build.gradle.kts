@@ -1,3 +1,9 @@
+import java.util.Properties
+
+val v = Properties().apply {
+    load(rootProject.file("versions.properties").inputStream())
+}
+
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
@@ -5,10 +11,10 @@ plugins {
 
 android {
     namespace = "com.neo.ide.projects"
-    compileSdk = 34
+    compileSdk = v.getProperty("compileSdk").toInt()
 
     defaultConfig {
-        minSdk = 30
+        minSdk = v.getProperty("minSdk").toInt()
     }
 
     compileOptions {
@@ -22,11 +28,11 @@ android {
 }
 
 dependencies {
-    implementation("org.greenrobot:eventbus:3.3.1")
-    implementation("com.google.code.gson:gson:2.10.1")
-    implementation("org.slf4j:slf4j-api:1.7.36")
-    
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("androidx.annotation:annotation:1.7.1")
+    implementation("org.greenrobot:eventbus:${v.getProperty("eventBusVersion")}")
+    implementation("com.google.code.gson:gson:${v.getProperty("gsonVersion")}")
+    implementation("org.slf4j:slf4j-api:${v.getProperty("slf4jVersion")}")
+
+    implementation("androidx.core:core-ktx:${v.getProperty("coreKtxVersion")}")
+    implementation("androidx.appcompat:appcompat:${v.getProperty("appcompatVersion")}")
+    implementation("androidx.annotation:annotation:${v.getProperty("annotationVersion")}")
 }

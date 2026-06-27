@@ -72,6 +72,10 @@
     <color name="status_info">#FF1976D2</color>
     <color name="status_success">#FF388E3C</color>
 
+    <!-- Semantic -->
+    <color name="color_error">#FFD32F2F</color>
+    <color name="color_warning">#FFF57C00</color>
+
     <!-- basic colors -->
     <color name="white">#FFFFFFFF</color>
     <color name="black">#FF000000</color>

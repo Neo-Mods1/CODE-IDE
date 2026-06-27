@@ -1,3 +1,9 @@
+import java.util.Properties
+
+val v = Properties().apply {
+    load(rootProject.file("versions.properties").inputStream())
+}
+
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
@@ -5,10 +11,10 @@ plugins {
 
 android {
     namespace = "com.neo.ide.templates"
-    compileSdk = 34
+    compileSdk = v.getProperty("compileSdk").toInt()
 
     defaultConfig {
-        minSdk = 30
+        minSdk = v.getProperty("minSdk").toInt()
     }
 
     compileOptions {
@@ -22,12 +28,12 @@ android {
 }
 
 dependencies {
-    implementation("com.squareup:javapoet:1.13.0")
-    implementation("org.greenrobot:eventbus:3.3.1")
-    
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("com.google.android.material:material:1.11.0")
-    implementation("androidx.annotation:annotation:1.7.1")
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("com.squareup:javapoet:${v.getProperty("javaPoetVersion")}")
+    implementation("org.greenrobot:eventbus:${v.getProperty("eventBusVersion")}")
+
+    implementation("androidx.core:core-ktx:${v.getProperty("coreKtxVersion")}")
+    implementation("androidx.appcompat:appcompat:${v.getProperty("appcompatVersion")}")
+    implementation("com.google.android.material:material:${v.getProperty("materialVersion")}")
+    implementation("androidx.annotation:annotation:${v.getProperty("annotationVersion")}")
+    implementation("androidx.constraintlayout:constraintlayout:${v.getProperty("constraintLayoutVersion")}")
 }

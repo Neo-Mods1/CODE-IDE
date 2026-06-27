@@ -152,6 +152,7 @@
     <string name="action_save_to_file">Save to file</string>
     <string name="action_cancel">Cancel</string>
     <string name="title_report_text">Report</string>
+    <string name="exit">Exit</string>
 
     <!-- Template names -->
     <string name="template_basic">Basic Activity</string>

@@ -54,7 +54,7 @@ bootstrapDir.mkdirs()
 
 val bootstrapFiles = bootstrapChecksums.map { (arch, _) ->
     val file = File(bootstrapDir, "bootstrap-${arch}.zip")
-    val url = "https://github.com/Neo-Mods1/CODE-IDE-resources/releases/download/${bootstrapVersion}/bootstrap-${arch}.zip"
+    val url = "https://github.com/Neo-Mods1/CODE-IDE-resources/releases/download/${bootstrapVersion}/bootstrap-release-${arch}.zip"
 
     if (file.exists()) file.delete()
 
